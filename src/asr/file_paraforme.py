@@ -8,13 +8,13 @@ import numpy as np
 import time
 
 # 先用 ffmpeg 转格式
-file_path = 'audio/out.wav'
-wav_path = 'audio/input.wav'
+file_path = 'audio/out.mp3'
+wav_path = 'audio/input.mp3'
 command = ['ffmpeg', '-y', '-i', file_path, '-ar', '16000', '-ac', '1', wav_path]
 subprocess.run(command, capture_output=True)
 
 # 载入模型
-chunk_size = [20, 40, 20] # 左回看，片段，右回看，单位 60ms
+chunk_size = [10, 20, 10] # 左回看，片段，右回看，单位 60ms
 
 home_directory = os.path.expanduser("D:/Cache/model/asr")
 

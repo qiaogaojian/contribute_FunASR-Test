@@ -50,8 +50,7 @@ device = "cuda"
 ncpu = 4
 
 # 检查模型是否存在，不存在则下载
-model_dir = asr_model_path
-if not os.path.exists(os.path.join(model_dir, 'configuration.json')):
+if not os.path.exists(os.path.join(asr_model_path, 'configuration.json')):
     print("正在下载模型文件...")
     snapshot_download('iic/speech_seaco_paraformer_large_asr_nat-zh-cn-16k-common-vocab8404-pytorch', 
                         cache_dir=home_directory)
