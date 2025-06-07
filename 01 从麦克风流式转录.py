@@ -9,10 +9,11 @@ from copy import deepcopy
 import numpy as np
 import sounddevice as sd
 from rich.console import Console
-from funasr_onnx.paraformer_online_bin import Paraformer
+# from funasr_onnx.paraformer_online_bin import Paraformer
 import colorama; colorama.init()
 console = Console()
 import signal 
+from funasr import AutoModel
 
 # paraformer 的单位片段长 60ms，在 16000 采样率下，就是 960 个采样
 # 它的 chunk_size ，如果设为 [10, 20, 10]
@@ -28,14 +29,62 @@ udp_port = 6009
 # 一行最多显示多少宽度（每个中文宽度为2，英文字母宽度为1）
 line_width = 50
 
-def recognize(queue_in: Queue, queue_out: Queue):
+# 在 recognize 函数开始处添加
+from modelscope import snapshot_download
+import os
 
+
+home_directory = os.path.expanduser("~")
+asr_model_path = os.path.join(home_directory, ".cache", "modelscope", "hub", "models", "iic", "speech_seaco_paraformer_large_asr_nat-zh-cn-16k-common-vocab8404-pytorch")
+asr_model_revision = "v2.0.4"
+vad_model_path = os.path.join(home_directory, ".cache", "modelscope", "hub", "models", "iic", "speech_fsmn_vad_zh-cn-16k-common-pytorch")
+vad_model_revision = "v2.0.4"
+punc_model_path = os.path.join(home_directory, ".cache", "modelscope", "hub", "models", "iic", "punc_ct-transformer_zh-cn-common-vocab272727-pytorch")
+punc_model_revision = "v2.0.4"
+spk_model_path = os.path.join(home_directory, ".cache", "modelscope", "hub", "models", "iic", "speech_campplus_sv_zh-cn_16k-common")
+spk_model_revision = "v2.0.4"
+ngpu = 1
+device = "cuda"
+ncpu = 4
+
+# ASR 模型
+model = AutoModel(model=asr_model_path,
+                  model_revision=asr_model_revision,
+                  vad_model=vad_model_path,
+                  vad_model_revision=vad_model_revision,
+                  punc_model=punc_model_path,
+                  punc_model_revision=punc_model_revision,
+                  spk_model=spk_model_path,
+                  spk_model_revision = spk_model_revision,
+                  ngpu=ngpu,
+                  ncpu=ncpu,
+                  device=device,
+                  disable_pbar=True,
+                  disable_log=True,
+                  disable_update=True
+                  )
+
+def recognize(queue_in: Queue, queue_out: Queue):
+    # 检查模型是否存在，不存在则下载
+    model_dir = 'model'
+    if not os.path.exists(os.path.join(model_dir, 'configuration.json')):
+        print("正在下载模型文件...")
+        snapshot_download('damo/speech_paraformer-large_asr_nat-zh-cn-16k-common-vocab8404-online', 
+                         cache_dir=model_dir)
+    
+    # 其余代码保持不变...
     # 创建一个 udp socket，用于实时发送文字
     sk = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     model_dir = 'model'
     chunk_size = [10, 20, 10] # 左回看数，总片段数，右回看数。每片段长 60ms
-    model = Paraformer(model_dir, batch_size=1, quantize=True, chunk_size=chunk_size, intra_op_num_threads=4) # only support batch_size = 1
+    # model = Paraformer(model_dir, batch_size=1, quantize=True, chunk_size=chunk_size, intra_op_num_threads=4) # only support batch_size = 1
+    # 修改模型初始化部分
+    # model = AutoModel(model="paraformer-zh", model_revision="v2.0.5",
+    #                     vad_model="fsmn-vad", vad_model_revision="v2.0.5",
+    #                     punc_model="ct-punc", punc_model_revision="v2.0.5",
+    #                     #quantize=True,
+    #                     device="cpu")
 
     # 通知主进程，可以开始了
     queue_out.put(True)
@@ -60,9 +109,11 @@ def recognize(queue_in: Queue, queue_out: Queue):
                     data = np.concatenate(chunks)
                     虚字典 = deepcopy(param_dict)
                     虚字典['is_final'] = True 
-                    rec_result = model(audio_in=data, param_dict=虚字典)
-                    if rec_result and rec_result[0]['preds'][0]:
-                        预测 = rec_result[0]['preds'][0]
+
+                    # 修改推理调用方式
+                    rec_result = model.generate(input=data, cache=虚字典.get('cache', {}))
+                    if rec_result and rec_result[0].get('text'):
+                        预测 = rec_result[0]['text']
                         if 预测 and 预测 != 旧预测: 
                             旧预测 = 预测
                             sk.sendto((行缓冲+预测).encode('utf-8'), ('127.0.0.1', udp_port))  # 网络发送
@@ -72,11 +123,10 @@ def recognize(queue_in: Queue, queue_out: Queue):
 
                 # 显示实文字
                 if len(chunks) == chunk_size[1]:
-                    param_dict['is_final'] = False
                     data = np.concatenate(chunks)
-                    rec_result = model(audio_in=data, param_dict=param_dict)
-                    if rec_result and rec_result[0]['preds'][0]:
-                        文字 = rec_result[0]['preds'][0]                   # 得到文字
+                    rec_result = model.generate(input=data, cache=param_dict.get('cache', {}))
+                    if rec_result and rec_result[0].get('text'):
+                        文字 = rec_result[0]['text']                   # 得到文字
                         if 文字 and 文字[-1] in ascii_letters: 文字 += ' '  # 英文后面加空格
                         行缓冲 += 文字                                      # 加入缓冲
                         sk.sendto(行缓冲.encode('utf-8'), ('127.0.0.1', udp_port))           # 网络发送
@@ -89,9 +139,9 @@ def recognize(queue_in: Queue, queue_out: Queue):
                 if not chunks:
                     chunks.append(np.zeros(960, dtype=np.float32))
                 data = np.concatenate(chunks)
-                param_dict['is_final'] = True
-                rec_result = model(audio_in=data, param_dict=param_dict)
-                if  rec_result: print(rec_result[0]['preds'][0], end='', flush=True)
+                rec_result = model.generate(input=data, cache=param_dict.get('cache', {}))
+                if rec_result and rec_result[0].get('text'): 
+                    print(rec_result[0]['text'], end='', flush=True)
                 chunks.clear()
                 param_dict = {'cache': dict()}
                 print('\n\n')
