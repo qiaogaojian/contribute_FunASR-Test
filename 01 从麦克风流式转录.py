@@ -34,28 +34,32 @@ from modelscope import snapshot_download
 import os
 
 
-home_directory = os.path.expanduser("~")
-asr_model_path = os.path.join(home_directory, ".cache", "modelscope", "hub", "models", "iic", "speech_seaco_paraformer_large_asr_nat-zh-cn-16k-common-vocab8404-pytorch")
+home_directory = os.path.expanduser("./model")
+
+asr_model_path = os.path.join(home_directory,"iic/speech_seaco_paraformer_large_asr_nat-zh-cn-16k-common-vocab8404-pytorch")
 asr_model_revision = "v2.0.4"
-vad_model_path = os.path.join(home_directory, ".cache", "modelscope", "hub", "models", "iic", "speech_fsmn_vad_zh-cn-16k-common-pytorch")
+vad_model_path = os.path.join(home_directory,"iic/speech_fsmn_vad_zh-cn-16k-common-pytorch")
 vad_model_revision = "v2.0.4"
-punc_model_path = os.path.join(home_directory, ".cache", "modelscope", "hub", "models", "iic", "punc_ct-transformer_zh-cn-common-vocab272727-pytorch")
+punc_model_path = os.path.join(home_directory,"iic/punc_ct-transformer_zh-cn-common-vocab272727-pytorch")
 punc_model_revision = "v2.0.4"
-spk_model_path = os.path.join(home_directory, ".cache", "modelscope", "hub", "models", "iic", "speech_campplus_sv_zh-cn_16k-common")
+spk_model_path = os.path.join(home_directory,"iic/speech_campplus_sv_zh-cn_16k-common")
 spk_model_revision = "v2.0.4"
 ngpu = 1
 device = "cuda"
 ncpu = 4
 
+# 检查模型是否存在，不存在则下载
+model_dir = asr_model_path
+if not os.path.exists(os.path.join(model_dir, 'configuration.json')):
+    print("正在下载模型文件...")
+    snapshot_download('iic/speech_seaco_paraformer_large_asr_nat-zh-cn-16k-common-vocab8404-pytorch', 
+                        cache_dir=home_directory)
+
 # ASR 模型
-model = AutoModel(model=asr_model_path,
-                  model_revision=asr_model_revision,
-                  vad_model=vad_model_path,
-                  vad_model_revision=vad_model_revision,
-                  punc_model=punc_model_path,
-                  punc_model_revision=punc_model_revision,
-                  spk_model=spk_model_path,
-                  spk_model_revision = spk_model_revision,
+model = AutoModel(model=asr_model_path,                  model_revision=asr_model_revision,
+                  vad_model=vad_model_path,              vad_model_revision=vad_model_revision,
+                  punc_model=punc_model_path,            punc_model_revision=punc_model_revision,
+                  spk_model=spk_model_path,              spk_model_revision = spk_model_revision,
                   ngpu=ngpu,
                   ncpu=ncpu,
                   device=device,
@@ -64,27 +68,13 @@ model = AutoModel(model=asr_model_path,
                   disable_update=True
                   )
 
-def recognize(queue_in: Queue, queue_out: Queue):
-    # 检查模型是否存在，不存在则下载
-    model_dir = 'model'
-    if not os.path.exists(os.path.join(model_dir, 'configuration.json')):
-        print("正在下载模型文件...")
-        snapshot_download('damo/speech_paraformer-large_asr_nat-zh-cn-16k-common-vocab8404-online', 
-                         cache_dir=model_dir)
-    
+def recognize(queue_in: Queue, queue_out: Queue):    
     # 其余代码保持不变...
     # 创建一个 udp socket，用于实时发送文字
     sk = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     model_dir = 'model'
     chunk_size = [10, 20, 10] # 左回看数，总片段数，右回看数。每片段长 60ms
-    # model = Paraformer(model_dir, batch_size=1, quantize=True, chunk_size=chunk_size, intra_op_num_threads=4) # only support batch_size = 1
-    # 修改模型初始化部分
-    # model = AutoModel(model="paraformer-zh", model_revision="v2.0.5",
-    #                     vad_model="fsmn-vad", vad_model_revision="v2.0.5",
-    #                     punc_model="ct-punc", punc_model_revision="v2.0.5",
-    #                     #quantize=True,
-    #                     device="cpu")
 
     # 通知主进程，可以开始了
     queue_out.put(True)
