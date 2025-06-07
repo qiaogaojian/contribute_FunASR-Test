@@ -34,7 +34,7 @@ from modelscope import snapshot_download
 import os
 
 
-home_directory = os.path.expanduser("./model")
+home_directory = os.path.expanduser("D:/Cache/model/asr")
 
 asr_model_path = os.path.join(home_directory,"iic/speech_seaco_paraformer_large_asr_nat-zh-cn-16k-common-vocab8404-pytorch")
 asr_model_revision = "v2.0.4"
@@ -44,6 +44,7 @@ punc_model_path = os.path.join(home_directory,"iic/punc_ct-transformer_zh-cn-com
 punc_model_revision = "v2.0.4"
 spk_model_path = os.path.join(home_directory,"iic/speech_campplus_sv_zh-cn_16k-common")
 spk_model_revision = "v2.0.4"
+
 ngpu = 1
 device = "cuda"
 ncpu = 4
@@ -68,12 +69,10 @@ model = AutoModel(model=asr_model_path,                  model_revision=asr_mode
                   disable_update=True
                   )
 
-def recognize(queue_in: Queue, queue_out: Queue):    
-    # 其余代码保持不变...
+def recognize(queue_in: Queue, queue_out: Queue):        
     # 创建一个 udp socket，用于实时发送文字
     sk = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-    model_dir = 'model'
     chunk_size = [10, 20, 10] # 左回看数，总片段数，右回看数。每片段长 60ms
 
     # 通知主进程，可以开始了

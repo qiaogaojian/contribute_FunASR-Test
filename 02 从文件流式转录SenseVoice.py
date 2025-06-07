@@ -16,17 +16,18 @@ subprocess.run(command, capture_output=True)
 # 载入模型
 chunk_size = [20, 40, 20] # 左回看，片段，右回看，单位 60ms
 
-home_directory = os.path.expanduser("~")
-# asr_model_path = os.path.join(home_directory, ".cache", "modelscope", "hub", "models", "iic", "speech_seaco_paraformer_large_asr_nat-zh-cn-16k-common-vocab8404-pytorch")
-asr_model_path = os.path.join(home_directory, ".cache/huggingface/hub/models--FunAudioLLM--SenseVoiceSmall/snapshots/3eb3b4eeffc2f2dde6051b853983753db33e35c3")
+
+home_directory = os.path.expanduser("D:/Cache/model/asr")
+asr_model_path = os.path.join(home_directory, "models--FunAudioLLM--SenseVoiceSmall/snapshots/3eb3b4eeffc2f2dde6051b853983753db33e35c3")
 asr_model_revision = "v2.0.4"
-vad_model_path = os.path.join(home_directory, ".cache", "modelscope", "hub", "models", "iic", "speech_fsmn_vad_zh-cn-16k-common-pytorch")
+vad_model_path = os.path.join(home_directory,"iic/speech_fsmn_vad_zh-cn-16k-common-pytorch")
 vad_model_revision = "v2.0.4"
-punc_model_path = os.path.join(home_directory, ".cache", "modelscope", "hub", "models", "iic", "punc_ct-transformer_zh-cn-common-vocab272727-pytorch")
+punc_model_path = os.path.join(home_directory,"iic/punc_ct-transformer_zh-cn-common-vocab272727-pytorch")
 punc_model_revision = "v2.0.4"
 # SenseVoiceSmall 不需要说话人分离模型
-# spk_model_path = os.path.join(home_directory, ".cache", "modelscope", "hub", "models", "iic", "speech_campplus_sv_zh-cn_16k-common")
-# spk_model_revision = "v2.0.4"
+spk_model_path = os.path.join(home_directory,"iic/speech_campplus_sv_zh-cn_16k-common")
+spk_model_revision = "v2.0.4"
+
 ngpu = 1
 device = "cuda"
 ncpu = 4
