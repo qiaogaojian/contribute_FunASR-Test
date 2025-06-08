@@ -81,7 +81,7 @@ def recognize(queue_in: Queue, queue_out: Queue):
     # 创建一个 udp socket，用于实时发送文字
     sk = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-    chunk_size = [10, 100, 10] # 左回看数，总片段数，右回看数。每片段长 60ms
+    chunk_size = [10, 50, 10] # 左回看数，总片段数，右回看数。每片段长 60ms
 
     # 通知主进程，可以开始了
     queue_out.put(True)
