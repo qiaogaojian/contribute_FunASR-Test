@@ -128,7 +128,7 @@ def recognize(queue_in: Queue, queue_out: Queue):
                         行缓冲 += 文字                                      # 加入缓冲
                         sk.sendto(行缓冲.encode('utf-8'), ('127.0.0.1', udp_port))           # 网络发送
                         print(f'\033[0K\033[32m{行缓冲}\033[0m', end='\033[0G', flush=True)  # 控制台打印
-                        printed_num += len(文字.encode('gbk'))              # 统计数字
+                        printed_num += len(文字.encode('utf-8'))              # 统计数字
                         if printed_num >= line_width: print(''); 行缓冲 = ''; printed_num=0    # 每到长度极限，就清空换行
                     chunks.clear()
 
