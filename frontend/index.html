@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>实时语音转文字显示</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🎤 实时语音转文字</h1>
+            <div class="status-indicator">
+                <span class="status-dot" id="statusDot"></span>
+                <span class="status-text" id="statusText">连接中...</span>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="text-display" id="textDisplay">
+                <div class="welcome-message">
+                    <p>🔊 等待语音识别数据...</p>
+                    <p class="hint">请确保ASR程序正在运行</p>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <div class="controls">
+                <button class="btn btn-clear" id="clearBtn">清空文本</button>
+                <button class="btn btn-save" id="saveBtn">保存文本</button>
+                <button class="btn btn-reconnect" id="reconnectBtn">重新连接</button>
+            </div>
+            <div class="info">
+                <span>连接状态: <span id="connectionInfo">未连接</span></span>
+                <span>|</span>
+                <span>最后更新: <span id="lastUpdate">--</span></span>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        class ASRWebSocketClient {
+            constructor() {
+                this.ws = null;
+                this.reconnectAttempts = 0;
+                this.maxReconnectAttempts = 5;
+                this.reconnectDelay = 2000;
+                this.isManualDisconnect = false;
+                
+                this.initElements();
+                this.bindEvents();
+                this.connect();
+            }
+
+            initElements() {
+                this.statusDot = document.getElementById('statusDot');
+                this.statusText = document.getElementById('statusText');
+                this.textDisplay = document.getElementById('textDisplay');
+                this.clearBtn = document.getElementById('clearBtn');
+                this.saveBtn = document.getElementById('saveBtn');
+                this.reconnectBtn = document.getElementById('reconnectBtn');
+                this.connectionInfo = document.getElementById('connectionInfo');
+                this.lastUpdate = document.getElementById('lastUpdate');
+            }
+
+            bindEvents() {
+                this.clearBtn.addEventListener('click', () => this.clearText());
+                this.saveBtn.addEventListener('click', () => this.saveText());
+                this.reconnectBtn.addEventListener('click', () => this.reconnect());
+                
+                // 键盘快捷键
+                document.addEventListener('keydown', (e) => {
+                    if (e.ctrlKey) {
+                        switch(e.key) {
+                            case 'l':
+                                e.preventDefault();
+                                this.clearText();
+                                break;
+                            case 's':
+                                e.preventDefault();
+                                this.saveText();
+                                break;
+                            case 'r':
+                                e.preventDefault();
+                                this.reconnect();
+                                break;
+                        }
+                    }
+                });
+            }
+
+            connect() {
+                try {
+                    this.ws = new WebSocket('ws://localhost:8766');
+                    
+                    this.ws.onopen = () => {
+                        console.log('WebSocket连接已建立');
+                        this.updateStatus('connected', '已连接');
+                        this.reconnectAttempts = 0;
+                        this.isManualDisconnect = false;
+                        this.updateConnectionInfo('已连接');
+                    };
+
+                    this.ws.onmessage = (event) => {
+                        try {
+                            const data = JSON.parse(event.data);
+                            this.handleMessage(data);
+                        } catch (e) {
+                            console.error('解析消息失败:', e);
+                        }
+                    };
+
+                    this.ws.onclose = () => {
+                        console.log('WebSocket连接已关闭');
+                        this.updateStatus('disconnected', '连接断开');
+                        this.updateConnectionInfo('连接断开');
+                        
+                        if (!this.isManualDisconnect) {
+                            this.attemptReconnect();
+                        }
+                    };
+
+                    this.ws.onerror = (error) => {
+                        console.error('WebSocket错误:', error);
+                        this.updateStatus('error', '连接错误');
+                        this.updateConnectionInfo('连接错误');
+                    };
+
+                } catch (error) {
+                    console.error('连接失败:', error);
+                    this.updateStatus('error', '连接失败');
+                    this.updateConnectionInfo('连接失败');
+                    this.attemptReconnect();
+                }
+            }
+
+            handleMessage(data) {
+                switch (data.type) {
+                    case 'welcome':
+                        console.log('收到欢迎消息:', data.message);
+                        if (data.current_text) {
+                            this.displayText(data.current_text, true);
+                        }
+                        break;
+                        
+                    case 'asr_result':
+                        this.displayText(data.text, data.is_final);
+                        this.updateLastUpdate();
+                        break;
+                        
+                    case 'pong':
+                        // 心跳响应
+                        break;
+                        
+                    default:
+                        console.log('未知消息类型:', data);
+                }
+            }
+
+            displayText(text, isFinal = true) {
+                // 清除欢迎消息
+                const welcomeMsg = this.textDisplay.querySelector('.welcome-message');
+                if (welcomeMsg) {
+                    welcomeMsg.remove();
+                }
+
+                // 创建或更新文本元素
+                let textElement = this.textDisplay.querySelector('.current-text');
+                if (!textElement) {
+                    textElement = document.createElement('div');
+                    textElement.className = 'current-text';
+                    this.textDisplay.appendChild(textElement);
+                }
+
+                textElement.textContent = text;
+                textElement.className = isFinal ? 'current-text final' : 'current-text preview';
+
+                // 自动滚动到底部
+                this.textDisplay.scrollTop = this.textDisplay.scrollHeight;
+            }
+
+            updateStatus(status, text) {
+                this.statusDot.className = `status-dot ${status}`;
+                this.statusText.textContent = text;
+            }
+
+            updateConnectionInfo(info) {
+                this.connectionInfo.textContent = info;
+            }
+
+            updateLastUpdate() {
+                const now = new Date();
+                this.lastUpdate.textContent = now.toLocaleTimeString();
+            }
+
+            attemptReconnect() {
+                if (this.reconnectAttempts < this.maxReconnectAttempts) {
+                    this.reconnectAttempts++;
+                    this.updateStatus('reconnecting', `重连中 (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+                    
+                    setTimeout(() => {
+                        console.log(`尝试重连 ${this.reconnectAttempts}/${this.maxReconnectAttempts}`);
+                        this.connect();
+                    }, this.reconnectDelay);
+                } else {
+                    this.updateStatus('error', '连接失败');
+                    this.updateConnectionInfo('连接失败，请手动重连');
+                }
+            }
+
+            clearText() {
+                this.textDisplay.innerHTML = '<div class="welcome-message"><p>文本已清空</p></div>';
+            }
+
+            saveText() {
+                const textElement = this.textDisplay.querySelector('.current-text');
+                if (textElement && textElement.textContent.trim()) {
+                    const text = textElement.textContent;
+                    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `语音转文字_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.txt`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                } else {
+                    alert('没有文本可保存');
+                }
+            }
+
+            reconnect() {
+                this.isManualDisconnect = true;
+                if (this.ws) {
+                    this.ws.close();
+                }
+                this.reconnectAttempts = 0;
+                setTimeout(() => this.connect(), 500);
+            }
+
+            // 发送心跳
+            sendHeartbeat() {
+                if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                    this.ws.send(JSON.stringify({ type: 'ping' }));
+                }
+            }
+        }
+
+        // 初始化客户端
+        const client = new ASRWebSocketClient();
+
+        // 定期发送心跳
+        setInterval(() => client.sendHeartbeat(), 30000);
+    </script>
+</body>
+</html>

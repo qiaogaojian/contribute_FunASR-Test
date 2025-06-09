@@ -72,13 +72,13 @@ def recognize(queue_in: Queue, queue_out: Queue):
     # 创建一个 udp socket，用于实时发送文字
     sk = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-    chunk_size = [10, 20, 10] # 左回看数，总片段数，右回看数。每片段长 60ms
+    chunk_size = [10, 50, 10] # 左回看数，总片段数，右回看数。每片段长 60ms
 
     # 通知主进程，可以开始了
     queue_out.put(True)
 
     # 每攒够 5 个片段，就预测一下虚文字
-    pre_num = 0; pre_expect = 5
+    pre_num = 0; pre_expect = 10
     printed_num = 0   # 记录一行已输出多少个字
     chunks = []
     param_dict = {'cache': dict()}
@@ -193,10 +193,16 @@ def main():
         callback=record_callback
     ); stream.start()
 
-    print('开始了')
-    while True:
-        input()
-        queue_in.put({'type': 'end'})
+    print('开始了，正在监听语音输入...')
+    print('按 Ctrl+C 停止程序')
+    try:
+        while True:
+            time.sleep(1)  # 保持程序运行
+    except KeyboardInterrupt:
+        print("\n程序已停止")
+        stream.stop()
+        stream.close()
+        f.close()
 
 if __name__ == '__main__':
     main()
