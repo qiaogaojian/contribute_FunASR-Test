@@ -62,7 +62,7 @@ app.add_middleware(
 )
 
 # 静态文件服务
-app.mount("/static", StaticFiles(directory="../frontend/dist"), name="static")
+app.mount("/assets", StaticFiles(directory="../frontend/dist/assets"), name="assets")
 
 # 全局服务实例
 asr_service = ASRService()
@@ -113,12 +113,13 @@ manager = ConnectionManager()
 # 数据模型
 class MeetingCreateRequest(BaseModel):
     title: str
+    description: Optional[str] = None
     participants: Optional[List[str]] = []
 
 class MeetingResponse(BaseModel):
     id: str
     title: str
-    start_time: datetime
+    start_time: Optional[datetime] = None
     end_time: Optional[datetime] = None
     status: str
     participants: List[str]
@@ -151,24 +152,30 @@ async def health_check():
 async def create_meeting(request: MeetingCreateRequest):
     """创建新会议"""
     try:
-        meeting = await meeting_manager.create_meeting(
-            title=request.title,
-            participants=request.participants
-        )
-        return MeetingResponse(**meeting)
+        meeting = meeting_manager.create_meeting(request)
+        return MeetingResponse(**meeting.dict())
     except Exception as e:
         logger.error(f"创建会议失败: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/meetings", response_model=List[MeetingResponse])
+@app.get("/api/meetings")
 async def list_meetings(limit: int = 20, offset: int = 0):
     """获取会议列表"""
     try:
-        meetings = await meeting_manager.list_meetings(limit=limit, offset=offset)
-        return [MeetingResponse(**meeting) for meeting in meetings]
+        meetings = meeting_manager.list_meetings(limit=limit, offset=offset)
+        meeting_responses = [MeetingResponse(**meeting.dict()) for meeting in meetings]
+        return {
+            "success": True,
+            "data": meeting_responses,
+            "message": "获取会议列表成功"
+        }
     except Exception as e:
         logger.error(f"获取会议列表失败: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return {
+            "success": False,
+            "data": [],
+            "message": str(e)
+        }
 
 @app.get("/api/meetings/{meeting_id}", response_model=MeetingResponse)
 async def get_meeting(meeting_id: str):

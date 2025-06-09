@@ -155,9 +155,9 @@ class MeetingManager:
         """获取录制客户端ID"""
         return self.recording_meetings.get(meeting_id)
     
-    def list_meetings(self, status: Optional[MeetingStatus] = None) -> List[Meeting]:
+    def list_meetings(self, status: Optional[MeetingStatus] = None, limit: int = 50, offset: int = 0) -> List[Meeting]:
         """列出会议"""
-        meetings = self.db_manager.list_meetings()
+        meetings = self.db_manager.list_meetings(limit=limit, offset=offset)
         
         if status:
             meetings = [m for m in meetings if m.status == status]
