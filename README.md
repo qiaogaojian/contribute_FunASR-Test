@@ -40,20 +40,32 @@ python start_frontend.py
 
 ### 方法一：一键启动（推荐）
 
+#### Windows批处理脚本
 ```bash
-python start_frontend.py
+start_asr_system.bat
+```
+
+#### PowerShell脚本
+```powershell
+.\start_asr_system.ps1
+```
+
+#### Python脚本
+```bash
+python start_asr_system.py
 ```
 
 这将自动：
-1. 检查并安装依赖
+1. 激活虚拟环境
 2. 启动WebSocket服务器
-3. 打开前端页面
+3. 启动ASR语音识别服务
+4. 打开前端页面
 
 ### 方法二：分步启动
 
-1. **启动ASR程序**
+1. **激活虚拟环境**
    ```bash
-   python src/asr/streaming_paraformer.py
+   micromamba activate ./venv
    ```
 
 2. **启动WebSocket服务器**
@@ -61,7 +73,12 @@ python start_frontend.py
    python src/websocket_server.py
    ```
 
-3. **打开前端页面**
+3. **启动ASR程序**
+   ```bash
+   python src/asr/streaming_paraformer.py
+   ```
+
+4. **打开前端页面**
    - 直接打开 `frontend/index.html` 文件
    - 或访问 `file:///path/to/frontend/index.html`
 
@@ -70,7 +87,7 @@ python start_frontend.py
 ### 端口配置
 
 - **UDP端口**: 6009 (ASR程序发送数据)
-- **WebSocket端口**: 8765 (前端连接)
+- **WebSocket端口**: 8766 (前端连接)
 
 如需修改端口，请同时修改以下文件：
 - `src/asr/streaming_paraformer.py` 中的 `udp_port`
