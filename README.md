@@ -15,30 +15,65 @@
 ## 项目结构
 
 ```
-├── src/
-│   ├── asr/
-│   │   └── streaming_paraformer.py    # ASR主程序
-│   └── websocket_server.py            # WebSocket服务器
-├── frontend/
-│   ├── index.html                     # 前端页面
-│   └── style.css                      # 样式文件
-├── start_frontend.py                  # 启动脚本
-└── README.md                          # 说明文档
+├── src/                               # 源代码目录
+│   ├── asr/                          # ASR语音识别模块
+│   │   ├── __init__.py
+│   │   └── streaming_paraformer.py   # ASR主程序
+│   ├── __init__.py
+│   ├── asr_config.py                 # ASR配置文件
+│   ├── config_switcher.py            # 配置切换工具
+│   ├── system_launcher.py            # 系统启动器
+│   └── websocket_server.py           # WebSocket服务器
+├── test/                             # 测试目录
+│   ├── __init__.py
+│   ├── test_frontend.py              # 前端测试
+│   ├── test_integrated_system.py     # 集成测试
+│   └── test_asr_optimization.py      # 优化效果测试
+├── frontend/                         # 前端文件
+│   ├── index.html                    # 前端页面
+│   └── style.css                     # 样式文件
+├── run_system.py                     # 主启动脚本
+├── switch_config.py                  # 配置切换脚本
+├── run_tests.py                      # 测试运行脚本
+├── pyproject.toml                    # Poetry配置
+└── README.md                         # 说明文档
 ```
 
 ## 安装依赖
 
-```bash
-# 安装WebSocket依赖
-pip install websockets
+### 使用Poetry（推荐）
 
-# 或者运行启动脚本会自动安装
-python start_frontend.py
+```bash
+# 安装Poetry（如果未安装）
+curl -sSL https://install.python-poetry.org | python3 -
+
+# 安装项目依赖
+poetry install
+```
+
+### 使用pip
+
+```bash
+# 安装依赖
+pip install -r requirements.txt
 ```
 
 ## 使用方法
 
-### 方法一：一键启动（推荐）
+### 方法一：Poetry启动（推荐）
+
+```bash
+# 一键启动整个系统
+python run_system.py
+```
+
+这将自动：
+1. 检查Poetry环境
+2. 启动WebSocket服务器（新窗口）
+3. 启动ASR语音识别服务
+4. 打开前端页面
+
+### 方法二：传统启动方式
 
 #### Windows批处理脚本
 ```bash
@@ -50,37 +85,29 @@ start_asr_system.bat
 .\start_asr_system.ps1
 ```
 
-#### Python脚本
+### 方法三：分步启动
+
+#### 使用虚拟环境解释器（推荐）
 ```bash
-python start_asr_system.py
+# 启动WebSocket服务器
+./venv/python.exe -m src.websocket_server
+
+# 启动ASR程序（新终端）
+./venv/python.exe -m src.asr.streaming_paraformer
 ```
 
-这将自动：
-1. 激活虚拟环境
-2. 启动WebSocket服务器
-3. 启动ASR语音识别服务
-4. 打开前端页面
+#### 使用Poetry
+```bash
+# 启动WebSocket服务器
+poetry run python -m src.websocket_server
 
-### 方法二：分步启动
+# 启动ASR程序（新终端）
+poetry run python -m src.asr.streaming_paraformer
+```
 
-1. **激活虚拟环境**
-   ```bash
-   micromamba activate ./venv
-   ```
-
-2. **启动WebSocket服务器**
-   ```bash
-   python src/websocket_server.py
-   ```
-
-3. **启动ASR程序**
-   ```bash
-   python src/asr/streaming_paraformer.py
-   ```
-
-4. **打开前端页面**
-   - 直接打开 `frontend/index.html` 文件
-   - 或访问 `file:///path/to/frontend/index.html`
+#### 打开前端页面
+- 直接打开 `frontend/index.html` 文件
+- 或访问 `file:///path/to/frontend/index.html`
 
 ## 配置说明
 
@@ -119,13 +146,13 @@ ASR程序使用以下模型：
 
 **交互式切换**：
 ```bash
-python switch_asr_config.py
+python switch_config.py
 ```
 
 **命令行快速切换**：
 ```bash
-python switch_asr_config.py meeting    # 切换到会议模式
-python switch_asr_config.py realtime   # 切换到实时模式
+python switch_config.py meeting    # 切换到会议模式
+python switch_config.py realtime   # 切换到实时模式
 ```
 
 #### 优化效果
@@ -135,6 +162,47 @@ python switch_asr_config.py realtime   # 切换到实时模式
 - ✅ 智能句子边界检测
 
 详细配置说明请参考 `FunASR_优化配置说明.md`
+
+## 测试
+
+### 运行测试
+
+```bash
+# 前端测试
+python run_tests.py frontend
+
+# 集成测试
+python run_tests.py integration
+
+# 优化效果测试
+python run_tests.py optimization
+```
+
+### 使用虚拟环境解释器运行测试
+
+```bash
+# 前端测试
+./venv/python.exe -m test.test_frontend
+
+# 集成测试
+./venv/python.exe -m test.test_integrated_system
+
+# 优化效果测试
+./venv/python.exe -m test.test_asr_optimization
+```
+
+### 使用Poetry运行测试
+
+```bash
+# 前端测试
+poetry run python -m test.test_frontend
+
+# 集成测试
+poetry run python -m test.test_integrated_system
+
+# 优化效果测试
+poetry run python -m test.test_asr_optimization
+```
 
 ## 快捷键
 

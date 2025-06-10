@@ -7,7 +7,7 @@ ASR配置切换工具
 
 import os
 import sys
-from asr_config import list_configs, get_config
+from src.asr_config import list_configs, get_config
 
 def modify_asr_config(config_name):
     """修改ASR脚本中的配置"""

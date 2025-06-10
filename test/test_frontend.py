@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-测试脚本 - 模拟ASR数据发送，测试前端显示
+前端测试脚本 - 模拟ASR数据发送，测试前端显示
 """
 
 import socket

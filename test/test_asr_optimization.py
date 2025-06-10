@@ -110,7 +110,7 @@ def test_websocket_connection():
 def check_asr_config():
     """检查当前ASR配置"""
     try:
-        from asr_config import get_config
+        from src.asr_config import get_config
         
         # 读取当前配置
         asr_file_path = "src/asr/streaming_paraformer.py"
@@ -164,8 +164,8 @@ def main():
     # 提示用户
     print("3. 测试准备...")
     print("请确保以下服务正在运行：")
-    print("   ✓ WebSocket服务器 (python src/websocket_server.py)")
-    print("   ✓ ASR语音识别服务 (python src/asr/streaming_paraformer.py)")
+    print("   ✓ WebSocket服务器 (python -m src.websocket_server)")
+    print("   ✓ ASR语音识别服务 (python -m src.asr.streaming_paraformer)")
     print("   ✓ 前端页面已打开 (frontend/index.html)")
     
     if not ws_ok:

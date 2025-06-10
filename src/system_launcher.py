@@ -45,8 +45,7 @@ def start_websocket_server():
     try:
         print("🚀 启动WebSocket服务器...")
         # 导入WebSocket服务器
-        sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
-        from websocket_server import ASRWebSocketServer
+        from src.websocket_server import ASRWebSocketServer
         
         async def run_websocket():
             server = ASRWebSocketServer()
@@ -74,8 +73,7 @@ def start_asr_service():
         time.sleep(3)
         
         # 导入ASR模块
-        sys.path.append(os.path.join(os.path.dirname(__file__), 'src', 'asr'))
-        from streaming_paraformer import main as asr_main
+        from src.asr.streaming_paraformer import main as asr_main
         
         # 运行ASR服务
         asr_main()
@@ -86,7 +84,7 @@ def start_asr_service():
 def open_frontend():
     """打开前端页面"""
     try:
-        frontend_path = Path(__file__).parent / "frontend" / "index.html"
+        frontend_path = Path(__file__).parent.parent / "frontend" / "index.html"
         if frontend_path.exists():
             # 等待服务器启动
             time.sleep(5)

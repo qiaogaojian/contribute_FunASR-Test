@@ -17,9 +17,8 @@ import signal
 from funasr import AutoModel
 
 # 导入配置文件
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 try:
-    from asr_config import get_config, SENTENCE_END_PUNCTUATION, AVOID_SPLIT_PUNCTUATION, MIN_SENTENCE_LENGTH, COMPLETE_SENTENCE_MIN_LENGTH
+    from src.asr_config import get_config, SENTENCE_END_PUNCTUATION, AVOID_SPLIT_PUNCTUATION, MIN_SENTENCE_LENGTH, COMPLETE_SENTENCE_MIN_LENGTH
 except ImportError:
     print("警告: 无法导入配置文件，使用默认配置")
     # 默认配置
@@ -54,7 +53,7 @@ udp_port = 6009
 line_width = 50
 
 # 配置选择 - 可以根据使用场景修改
-CONFIG_NAME = "balanced"  # 可选: "meeting", "realtime", "balanced", "noisy", "long_speech"
+CONFIG_NAME = "meeting"  # 可选: "meeting", "realtime", "balanced", "noisy", "long_speech"
 
 # 在 recognize 函数开始处添加
 from modelscope import snapshot_download
