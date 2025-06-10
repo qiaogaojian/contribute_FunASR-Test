@@ -98,11 +98,43 @@ python start_asr_system.py
 
 ASR程序使用以下模型：
 - **ASR模型**: speech_seaco_paraformer_large_asr_nat-zh-cn-16k-common-vocab8404-pytorch
-- **VAD模型**: speech_fsmn_vad_zh-cn-16k-common-pytorch  
+- **VAD模型**: speech_fsmn_vad_zh-cn-16k-common-pytorch
 - **标点模型**: punc_ct-transformer_zh-cn-common-vocab272727-pytorch
 - **说话人模型**: speech_campplus_sv_zh-cn_16k-common
 
 模型将自动下载到 `D:/Cache/model/asr` 目录。
+
+### 语音识别优化配置
+
+为了解决**一句话被错误拆分**的问题，系统提供了多种优化配置：
+
+#### 可用配置类型
+- **balanced** (默认): 平衡精度和响应速度
+- **meeting**: 会议转录，追求高精度
+- **realtime**: 实时对话，追求快速响应
+- **noisy**: 噪声环境，提高噪声容忍度
+- **long_speech**: 长语音，适用于演讲等场景
+
+#### 配置切换方法
+
+**交互式切换**：
+```bash
+python switch_asr_config.py
+```
+
+**命令行快速切换**：
+```bash
+python switch_asr_config.py meeting    # 切换到会议模式
+python switch_asr_config.py realtime   # 切换到实时模式
+```
+
+#### 优化效果
+- ✅ 减少句子错误拆分
+- ✅ 提高识别连续性
+- ✅ 改善语义完整性
+- ✅ 智能句子边界检测
+
+详细配置说明请参考 `FunASR_优化配置说明.md`
 
 ## 快捷键
 
