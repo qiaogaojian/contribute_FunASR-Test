@@ -102,9 +102,11 @@ def recognize(queue_in: Queue, queue_out: Queue):
                     rec_result = model.generate(input=data, cache=虚字典.get('cache', {}))
                     if rec_result and rec_result[0].get('text'):
                         预测 = rec_result[0]['text']
-                        if 预测 and 预测 != 旧预测: 
+                        if 预测 and 预测 != 旧预测:
                             旧预测 = 预测
-                            sk.sendto((行缓冲+预测).encode('utf-8'), ('127.0.0.1', udp_port))  # 网络发送
+                            # 发送预览文字，添加类型标识
+                            message = f"PREVIEW:{行缓冲+预测}"
+                            sk.sendto(message.encode('utf-8'), ('127.0.0.1', udp_port))  # 网络发送
                             print(f'\033[0K\033[32m{行缓冲}\033[33m{预测}\033[0m',             # 控制台打印
                                   end=f'\033[0G', flush=True)
                 elif pre_num == 5: pre_num = 0
@@ -116,8 +118,13 @@ def recognize(queue_in: Queue, queue_out: Queue):
                     if rec_result and rec_result[0].get('text'):
                         文字 = rec_result[0]['text']                   # 得到文字
                         if 文字 and 文字[-1] in ascii_letters: 文字 += ' '  # 英文后面加空格
+
+                        # 发送单独的文字片段作为最终结果
+                        if 文字:
+                            message = f"FINAL:{文字}"
+                            sk.sendto(message.encode('utf-8'), ('127.0.0.1', udp_port))  # 网络发送
+
                         行缓冲 += 文字                                      # 加入缓冲
-                        sk.sendto(行缓冲.encode('utf-8'), ('127.0.0.1', udp_port))           # 网络发送
                         print(f'\033[0K\033[32m{行缓冲}\033[0m', end='\033[0G', flush=True)  # 控制台打印
                         printed_num += len(文字.encode('gbk'))              # 统计数字
                         if printed_num >= line_width: print(''); 行缓冲 = ''; printed_num=0    # 每到长度极限，就清空换行

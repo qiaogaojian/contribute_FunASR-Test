@@ -13,21 +13,27 @@ def send_test_data():
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     
     test_messages = [
-        "你好，这是一个测试消息",
-        "语音识别正在工作",
-        "实时显示功能正常",
-        "WebSocket连接成功",
-        "前端界面显示正常",
-        "测试完成，系统运行良好"
+        ("FINAL:你好，", "最终结果"),
+        ("PREVIEW:你好，这是一个", "预览文字"),
+        ("FINAL:这是一个测试消息", "最终结果"),
+        ("PREVIEW:语音识别正在", "预览文字"),
+        ("FINAL:语音识别正在工作", "最终结果"),
+        ("PREVIEW:实时显示功能", "预览文字"),
+        ("FINAL:实时显示功能正常", "最终结果"),
+        ("FINAL:WebSocket连接成功", "最终结果"),
+        ("FINAL:前端界面显示正常", "最终结果"),
+        ("FINAL:测试完成，系统运行良好", "最终结果")
     ]
     
     print("开始发送测试数据...")
     
-    for i, message in enumerate(test_messages):
+    for i, (message, msg_type) in enumerate(test_messages):
         try:
             sock.sendto(message.encode('utf-8'), ('127.0.0.1', 6009))
-            print(f"发送: {message}")
-            time.sleep(3)  # 每3秒发送一条消息
+            print(f"发送 ({msg_type}): {message}")
+            # 预览消息间隔短一些，最终消息间隔长一些
+            sleep_time = 1 if msg_type == "预览文字" else 2
+            time.sleep(sleep_time)
         except Exception as e:
             print(f"发送失败: {e}")
     

@@ -86,13 +86,27 @@ class ASRWebSocketServer:
         while self.is_running:
             try:
                 data, addr = sock.recvfrom(4096)
-                text = data.decode('utf-8', errors='ignore').strip()
-                
-                if text:
-                    logger.info(f"收到ASR数据: {text}")
+                message = data.decode('utf-8', errors='ignore').strip()
+
+                if message:
+                    # 解析消息类型和内容
+                    if message.startswith('PREVIEW:'):
+                        text = message[8:]  # 移除 'PREVIEW:' 前缀
+                        is_final = False
+                        logger.info(f"收到预览数据: {text}")
+                    elif message.startswith('FINAL:'):
+                        text = message[6:]  # 移除 'FINAL:' 前缀
+                        is_final = True
+                        logger.info(f"收到最终数据: {text}")
+                    else:
+                        # 兼容旧格式，默认为最终结果
+                        text = message
+                        is_final = True
+                        logger.info(f"收到ASR数据: {text}")
+
                     # 在事件循环中广播文本
                     asyncio.run_coroutine_threadsafe(
-                        self.broadcast_text(text), 
+                        self.broadcast_text(text, is_final),
                         self.loop
                     )
                     

@@ -166,16 +166,29 @@
                     welcomeMsg.remove();
                 }
 
-                // 创建或更新文本元素
-                let textElement = this.textDisplay.querySelector('.current-text');
-                if (!textElement) {
-                    textElement = document.createElement('div');
-                    textElement.className = 'current-text';
-                    this.textDisplay.appendChild(textElement);
-                }
+                if (isFinal) {
+                    // 最终结果：创建新的文本元素
+                    const textElement = document.createElement('div');
+                    textElement.className = 'text-line final';
+                    textElement.textContent = text;
 
-                textElement.textContent = text;
-                textElement.className = isFinal ? 'current-text final' : 'current-text preview';
+                    // 添加时间戳
+                    const timestamp = document.createElement('span');
+                    timestamp.className = 'timestamp';
+                    timestamp.textContent = new Date().toLocaleTimeString();
+                    textElement.appendChild(timestamp);
+
+                    this.textDisplay.appendChild(textElement);
+                } else {
+                    // 预览文本：更新或创建预览元素
+                    let previewElement = this.textDisplay.querySelector('.text-line.preview');
+                    if (!previewElement) {
+                        previewElement = document.createElement('div');
+                        previewElement.className = 'text-line preview';
+                        this.textDisplay.appendChild(previewElement);
+                    }
+                    previewElement.textContent = text;
+                }
 
                 // 自动滚动到底部
                 this.textDisplay.scrollTop = this.textDisplay.scrollHeight;
@@ -215,10 +228,17 @@
             }
 
             saveText() {
-                const textElement = this.textDisplay.querySelector('.current-text');
-                if (textElement && textElement.textContent.trim()) {
-                    const text = textElement.textContent;
-                    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+                const textElements = this.textDisplay.querySelectorAll('.text-line.final');
+                if (textElements.length > 0) {
+                    let allText = '';
+                    textElements.forEach((element, index) => {
+                        // 提取文本内容（排除时间戳）
+                        const textContent = element.childNodes[0].textContent || element.textContent;
+                        const timestamp = element.querySelector('.timestamp')?.textContent || '';
+                        allText += `[${timestamp}] ${textContent}\n`;
+                    });
+
+                    const blob = new Blob([allText], { type: 'text/plain;charset=utf-8' });
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
