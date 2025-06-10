@@ -29,15 +29,27 @@ y_coordinate = (screen_height // 2) - (window_height // 2)
 # 设置窗口大小和位置
 root.geometry(f"{window_width}x{window_height}+{x_coordinate}+{y_coordinate}")
 
-home_directory = os.path.expanduser("~")
-asr_model_path = os.path.join(home_directory, ".cache", "modelscope", "hub", "models", "iic", "speech_seaco_paraformer_large_asr_nat-zh-cn-16k-common-vocab8404-pytorch")
+# home_directory = os.path.expanduser("~")
+# asr_model_path = os.path.join(home_directory, ".cache", "modelscope", "hub", "models", "iic", "speech_seaco_paraformer_large_asr_nat-zh-cn-16k-common-vocab8404-pytorch")
+# asr_model_revision = "v2.0.4"
+# vad_model_path = os.path.join(home_directory, ".cache", "modelscope", "hub", "models", "iic", "speech_fsmn_vad_zh-cn-16k-common-pytorch")
+# vad_model_revision = "v2.0.4"
+# punc_model_path = os.path.join(home_directory, ".cache", "modelscope", "hub", "models", "iic", "punc_ct-transformer_zh-cn-common-vocab272727-pytorch")
+# punc_model_revision = "v2.0.4"
+# spk_model_path = os.path.join(home_directory, ".cache", "modelscope", "hub", "models", "iic", "speech_campplus_sv_zh-cn_16k-common")
+# spk_model_revision = "v2.0.4"
+
+home_directory = os.path.expanduser("D:/Cache/model/asr")
+
+asr_model_path = os.path.join(home_directory,"iic/speech_seaco_paraformer_large_asr_nat-zh-cn-16k-common-vocab8404-pytorch")
 asr_model_revision = "v2.0.4"
-vad_model_path = os.path.join(home_directory, ".cache", "modelscope", "hub", "models", "iic", "speech_fsmn_vad_zh-cn-16k-common-pytorch")
+vad_model_path = os.path.join(home_directory,"iic/speech_fsmn_vad_zh-cn-16k-common-pytorch")
 vad_model_revision = "v2.0.4"
-punc_model_path = os.path.join(home_directory, ".cache", "modelscope", "hub", "models", "iic", "punc_ct-transformer_zh-cn-common-vocab272727-pytorch")
+punc_model_path = os.path.join(home_directory,"iic/punc_ct-transformer_zh-cn-common-vocab272727-pytorch")
 punc_model_revision = "v2.0.4"
-spk_model_path = os.path.join(home_directory, ".cache", "modelscope", "hub", "models", "iic", "speech_campplus_sv_zh-cn_16k-common")
+spk_model_path = os.path.join(home_directory,"iic/speech_campplus_sv_zh-cn_16k-common")
 spk_model_revision = "v2.0.4"
+
 ngpu = 1
 device = "cuda"
 ncpu = 4
