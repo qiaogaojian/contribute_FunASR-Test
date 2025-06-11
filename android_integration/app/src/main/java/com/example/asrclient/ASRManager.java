@@ -38,7 +38,7 @@ public class ASRManager implements ASRWebSocketClient.ASRCallback, AudioRecordMa
         this.heartbeatHandler = new Handler(Looper.getMainLooper());
         
         // 初始化音频录制管理器
-        this.audioRecordManager = new AudioRecordManager(this);
+        this.audioRecordManager = new AudioRecordManager(context, this);
         
         // 初始化心跳任务
         this.heartbeatRunnable = new Runnable() {

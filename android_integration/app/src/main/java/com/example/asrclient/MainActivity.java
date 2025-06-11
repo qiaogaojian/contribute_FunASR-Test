@@ -6,6 +6,7 @@ import androidx.core.content.ContextCompat;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -31,9 +32,10 @@ public class MainActivity extends AppCompatActivity implements ASRManager.ASRLis
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        
-        initViews();
+
+        // 先初始化 ASRManager，再初始化 Views
         initASRManager();
+        initViews();
         requestPermissions();
     }
 
@@ -59,7 +61,25 @@ public class MainActivity extends AppCompatActivity implements ASRManager.ASRLis
     }
 
     private void initASRManager() {
-        asrManager = new ASRManager(this, this);
+        try {
+            // 运行音频诊断
+            AudioDiagnostics.DiagnosticResult diagnostic = AudioDiagnostics.runDiagnostics(this);
+            Log.d("MainActivity", "音频诊断结果:\n" + diagnostic.toString());
+
+            if (!diagnostic.audioRecordSupported) {
+                Toast.makeText(this, "设备不支持音频录制: " + diagnostic.errorMessage, Toast.LENGTH_LONG).show();
+                asrManager = null;
+                return;
+            }
+
+            asrManager = new ASRManager(this, this);
+            Log.d("MainActivity", "ASRManager 初始化成功");
+        } catch (Exception e) {
+            Log.e("MainActivity", "ASRManager 初始化失败", e);
+            Toast.makeText(this, "ASR服务初始化失败: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            // 即使初始化失败，也要确保 UI 能正常显示
+            asrManager = null;
+        }
     }
 
     private void requestPermissions() {
@@ -101,6 +121,11 @@ public class MainActivity extends AppCompatActivity implements ASRManager.ASRLis
     }
 
     private void onConnectClick(View view) {
+        if (asrManager == null) {
+            Toast.makeText(this, "ASR服务未初始化", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         if (asrManager.isConnected()) {
             // 断开连接
             asrManager.disconnect();
@@ -129,6 +154,11 @@ public class MainActivity extends AppCompatActivity implements ASRManager.ASRLis
     }
 
     private void onRecordClick(View view) {
+        if (asrManager == null) {
+            Toast.makeText(this, "ASR服务未初始化", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         if (asrManager.isRecording()) {
             // 停止录音
             asrManager.stopRecording();
@@ -145,6 +175,19 @@ public class MainActivity extends AppCompatActivity implements ASRManager.ASRLis
 
     private void updateUI() {
         runOnUiThread(() -> {
+            // 添加 null 检查，防止 NullPointerException
+            if (asrManager == null) {
+                // ASRManager 未初始化时的默认状态
+                btnConnect.setText(getString(R.string.connect_server));
+                btnConnect.setEnabled(true);
+                btnRecord.setText(getString(R.string.start_recording));
+                btnRecord.setEnabled(false);
+                tvStatus.setText(getString(R.string.not_connected));
+                etServerHost.setEnabled(true);
+                etServerPort.setEnabled(true);
+                return;
+            }
+
             boolean connected = asrManager.isConnected();
             boolean recording = asrManager.isRecording();
             

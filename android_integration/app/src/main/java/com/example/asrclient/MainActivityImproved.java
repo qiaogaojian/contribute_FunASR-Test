@@ -33,9 +33,10 @@ public class MainActivityImproved extends AppCompatActivity implements ASRManage
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main_improved);
-        
-        initViews();
+
+        // 先初始化 ASRManager，再初始化 Views
         initASRManager();
+        initViews();
         requestPermissions();
     }
 
@@ -101,6 +102,11 @@ public class MainActivityImproved extends AppCompatActivity implements ASRManage
     }
 
     private void onConnectClick(View view) {
+        if (asrManager == null) {
+            Toast.makeText(this, "ASR服务未初始化", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         if (asrManager.isConnected()) {
             // 断开连接
             asrManager.disconnect();
@@ -129,6 +135,11 @@ public class MainActivityImproved extends AppCompatActivity implements ASRManage
     }
 
     private void onRecordClick(View view) {
+        if (asrManager == null) {
+            Toast.makeText(this, "ASR服务未初始化", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         if (asrManager.isRecording()) {
             // 停止录音
             asrManager.stopRecording();
@@ -151,6 +162,19 @@ public class MainActivityImproved extends AppCompatActivity implements ASRManage
 
     private void updateUI() {
         runOnUiThread(() -> {
+            // 添加 null 检查，防止 NullPointerException
+            if (asrManager == null) {
+                // ASRManager 未初始化时的默认状态
+                btnConnect.setText(getString(R.string.connect_server));
+                btnConnect.setEnabled(true);
+                btnRecord.setText(getString(R.string.start_recording));
+                btnRecord.setEnabled(false);
+                tvStatus.setText(getString(R.string.not_connected));
+                etServerHost.setEnabled(true);
+                etServerPort.setEnabled(true);
+                return;
+            }
+
             boolean connected = asrManager.isConnected();
             boolean recording = asrManager.isRecording();
             

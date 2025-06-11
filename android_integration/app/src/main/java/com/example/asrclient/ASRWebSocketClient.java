@@ -50,19 +50,23 @@ public class ASRWebSocketClient extends WebSocketClient {
                 case "welcome":
                     Log.d(TAG, "收到欢迎消息");
                     break;
-                    
+
+                case "pong":
+                    Log.d(TAG, "收到心跳响应");
+                    break;
+
                 case "asr_result":
                 case "recognition_result":
                     handleRecognitionResult(jsonObject);
                     break;
-                    
+
                 case "error":
                     String errorMsg = jsonObject.get("error_message").getAsString();
                     if (callback != null) {
                         callback.onError(errorMsg);
                     }
                     break;
-                    
+
                 default:
                     Log.d(TAG, "未知消息类型: " + type);
             }
