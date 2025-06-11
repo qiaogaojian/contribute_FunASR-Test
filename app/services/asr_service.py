@@ -93,7 +93,7 @@ class ASRService:
             recognition_results = []
             if results:
                 # 只在有有效结果时打印日志
-                logger.info(f"ASR results type: {type(results)}, value: {results}")
+                logger.info(f"ASR识别结果: {results}")
                 # 处理不同格式的结果
                 if isinstance(results, dict):
                     # 单个字典结果

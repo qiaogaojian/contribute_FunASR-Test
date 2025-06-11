@@ -98,9 +98,10 @@ def open_frontend(settings):
     time.sleep(3)  # 等待服务器启动
     
     try:
-        # 检查服务器是否启动
+        # 检查服务器是否启动 - 使用 localhost 进行健康检查
         import requests
-        health_url = f"http://{settings.host}:{settings.port}/health"
+        display_host = "localhost" if settings.host == "0.0.0.0" else settings.host
+        health_url = f"http://{display_host}:{settings.port}/health"
         response = requests.get(health_url, timeout=5)
         if response.status_code == 200:
             logger.info("✅ 服务器健康检查通过")
@@ -109,13 +110,14 @@ def open_frontend(settings):
     except Exception as e:
         logger.warning(f"⚠️ 无法连接到服务器: {e}")
     
-    # 打开前端页面
-    frontend_url = f"http://{settings.host}:{settings.port}/"
+    # 打开前端页面 - 使用 localhost 而不是 0.0.0.0
+    display_host = "localhost" if settings.host == "0.0.0.0" else settings.host
+    frontend_url = f"http://{display_host}:{settings.port}/"
     logger.info(f"🌐 打开前端页面: {frontend_url}")
     webbrowser.open(frontend_url)
-    
+
     # 打开API文档
-    docs_url = f"http://{settings.host}:{settings.port}/docs"
+    docs_url = f"http://{display_host}:{settings.port}/docs"
     logger.info(f"📚 API文档地址: {docs_url}")
 
 
@@ -145,11 +147,13 @@ def main():
     print(f"- ASR配置: {settings.default_asr_config}")
     print(f"- ASR设备: {settings.asr_device}")
     
+    # 显示用户友好的地址
+    display_host = "localhost" if settings.host == "0.0.0.0" else settings.host
     print("\n🔗 服务地址:")
-    print(f"- 主页: http://{settings.host}:{settings.port}/")
-    print(f"- API文档: http://{settings.host}:{settings.port}/docs")
-    print(f"- 健康检查: http://{settings.host}:{settings.port}/health")
-    print(f"- WebSocket: ws://{settings.host}:{settings.port}/ws/audio")
+    print(f"- 主页: http://{display_host}:{settings.port}/")
+    print(f"- API文档: http://{display_host}:{settings.port}/docs")
+    print(f"- 健康检查: http://{display_host}:{settings.port}/health")
+    print(f"- WebSocket: ws://{display_host}:{settings.port}/ws/audio")
     
     print("\n💡 使用说明:")
     print("1. 服务启动后会自动打开前端页面")
