@@ -120,30 +120,41 @@ class ASRWebSocketServer:
             logger.error(f"处理音频数据失败: {e}")
             
     async def process_audio_chunk(self):
-        """处理音频块"""
+        """处理音频块 - 支持优化后的两阶段识别"""
         try:
             if not self.use_local_asr or not self.asr_engine:
                 # 如果没有本地ASR引擎，清空缓冲区
                 self.audio_buffer = []
                 return
-                
+
             # 获取音频数据
             chunk_data = np.array(self.audio_buffer[:self.chunk_size], dtype=np.int16)
             self.audio_buffer = self.audio_buffer[self.chunk_size:]
-            
+
             # 转换为float32格式
             audio_float = chunk_data.astype(np.float32) / 32768.0
-            
-            # 调用ASR引擎进行识别
+
+            # 调用优化后的ASR引擎进行识别
             result = await asyncio.get_event_loop().run_in_executor(
                 None, self.asr_engine.recognize_chunk, audio_float
             )
-            
-            if result and result.strip():
-                # 广播识别结果
-                await self.broadcast_text(result, True)
-                logger.info(f"ASR识别结果: {result}")
-                
+
+            if result and isinstance(result, dict):
+                # 处理新的结构化结果
+                text = result.get('text', '').strip()
+                result_type = result.get('type', 'final')
+                is_final = (result_type == 'final')
+
+                if text:
+                    # 广播识别结果，区分预测和最终结果
+                    await self.broadcast_text(text, is_final)
+                    logger.info(f"ASR识别结果 ({result_type}): {text}")
+
+            elif result and isinstance(result, str) and result.strip():
+                # 兼容旧格式的字符串结果
+                await self.broadcast_text(result.strip(), True)
+                logger.info(f"ASR识别结果 (兼容模式): {result}")
+
         except Exception as e:
             logger.error(f"处理音频块失败: {e}")
             # 清空缓冲区以避免错误累积
