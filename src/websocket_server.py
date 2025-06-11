@@ -1,18 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-WebSocket服务器 - 接收ASR的UDP数据并转发给前端
+WebSocket服务器 - 处理前端音频数据并进行实时语音识别
 """
 
 import asyncio
-import socket
-import threading
 import json
 import logging
 from datetime import datetime
 import numpy as np
-import wave
-import io
 
 import websockets
 
@@ -21,8 +17,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 class ASRWebSocketServer:
-    def __init__(self, udp_port: int = 6009, websocket_port: int = 8766):
-        self.udp_port = udp_port
+    def __init__(self, websocket_port: int = 8766):
         self.websocket_port = websocket_port
         self.clients = set()
         self.latest_text = ""
@@ -101,8 +96,7 @@ class ASRWebSocketServer:
         """处理音频数据"""
         try:
             audio_data = data.get('data', [])
-            sample_rate = data.get('sampleRate', 16000)
-            
+
             if not audio_data:
                 return
                 
@@ -159,52 +153,8 @@ class ASRWebSocketServer:
             logger.error(f"处理音频块失败: {e}")
             # 清空缓冲区以避免错误累积
             self.audio_buffer = []
-            
-    def udp_listener(self):
-        """UDP监听器，接收ASR数据"""
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sock.bind(('127.0.0.1', self.udp_port))
-        sock.settimeout(1.0)  # 设置超时，便于优雅退出
-        
-        logger.info(f"UDP监听器启动，端口: {self.udp_port}")
-        
-        while self.is_running:
-            try:
-                data, addr = sock.recvfrom(4096)
-                message = data.decode('utf-8', errors='ignore').strip()
 
-                if message:
-                    # 解析消息类型和内容
-                    if message.startswith('PREVIEW:'):
-                        text = message[8:]  # 移除 'PREVIEW:' 前缀
-                        is_final = False
-                        logger.info(f"收到预览数据: {text}")
-                    elif message.startswith('FINAL:'):
-                        text = message[6:]  # 移除 'FINAL:' 前缀
-                        is_final = True
-                        logger.info(f"收到最终数据: {text}")
-                    else:
-                        # 兼容旧格式，默认为最终结果
-                        text = message
-                        is_final = True
-                        logger.info(f"收到ASR数据: {text}")
-
-                    # 在事件循环中广播文本
-                    asyncio.run_coroutine_threadsafe(
-                        self.broadcast_text(text, is_final),
-                        self.loop
-                    )
-                    
-            except socket.timeout:
-                continue
-            except Exception as e:
-                if self.is_running:
-                    logger.error(f"UDP监听错误: {e}")
-                    
-        sock.close()
-        logger.info("UDP监听器已停止")
-        
-    async def handle_websocket(self, websocket, path):
+    async def handle_websocket(self, websocket, _path):
         """处理WebSocket连接"""
         await self.register_client(websocket)
         try:
@@ -233,10 +183,6 @@ class ASRWebSocketServer:
         self.is_running = True
         self.loop = asyncio.get_event_loop()
 
-        # 启动UDP监听器线程
-        udp_thread = threading.Thread(target=self.udp_listener, daemon=True)
-        udp_thread.start()
-
         # 启动WebSocket服务器
         logger.info(f"WebSocket服务器启动，端口: {self.websocket_port}")
 
@@ -245,7 +191,7 @@ class ASRWebSocketServer:
             self.handle_websocket,
             "localhost",
             self.websocket_port
-        ) as server:
+        ):
             logger.info("服务器运行中，按Ctrl+C停止...")
 
             try:
