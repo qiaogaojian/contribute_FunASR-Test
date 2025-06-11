@@ -86,7 +86,27 @@ def create_app() -> FastAPI:
     @app.on_event("startup")
     async def startup_event():
         logger.info("ASR Service starting up...")
-        # 这里可以添加启动时的初始化逻辑
+
+        # 预热 ASR 服务 - 预加载默认模型以减少首次使用延迟
+        try:
+            logger.info("🔥 Warming up ASR service...")
+            from app.api.websocket import get_asr_service
+            asr_service = get_asr_service()
+
+            # 创建一个预热会话
+            warmup_session_id = "warmup_session"
+            success = await asr_service.create_asr_engine(warmup_session_id, "balanced")
+
+            if success:
+                logger.info("✅ ASR service warmed up successfully")
+                # 清理预热会话
+                await asr_service.cleanup_session(warmup_session_id)
+            else:
+                logger.warning("⚠️ ASR service warmup failed")
+
+        except Exception as e:
+            logger.error(f"❌ ASR service warmup error: {e}")
+            # 不阻止服务启动，只是记录错误
         
     # 关闭事件
     @app.on_event("shutdown")

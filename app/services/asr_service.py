@@ -64,16 +64,17 @@ class ASRService:
     async def process_audio_chunk(self, session_id: str, audio_data: bytes) -> List[RecognitionResult]:
         """处理音频数据块"""
         try:
-            # logger.info(f"Processing audio chunk: session={session_id}, data_size={len(audio_data)} bytes")
-
-            # 确保会话有ASR引擎
-            if session_id not in self._asr_engines:
-                config_name = self._session_configs.get(session_id, "balanced")
-                await self.create_asr_engine(session_id, config_name)
-
+            # 获取预创建的 ASR 引擎
             asr_engine = self._asr_engines.get(session_id)
             if not asr_engine:
-                raise Exception(f"No ASR engine for session {session_id}")
+                # 如果引擎不存在，尝试创建（兜底机制）
+                logger.warning(f"ASR engine not found for session {session_id}, creating on-demand")
+                config_name = self._session_configs.get(session_id, "balanced")
+                await self.create_asr_engine(session_id, config_name)
+                asr_engine = self._asr_engines.get(session_id)
+
+                if not asr_engine:
+                    raise Exception(f"Failed to create ASR engine for session {session_id}")
 
             # 转换音频数据格式
             try:

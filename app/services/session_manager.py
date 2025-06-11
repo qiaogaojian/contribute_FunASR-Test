@@ -96,18 +96,35 @@ class SessionManager:
         return True
     
     async def start_session(self, session_id: str) -> bool:
-        """启动会话"""
+        """启动会话并预创建 ASR 引擎"""
         if session_id not in self._sessions:
             return False
-        
+
         session = self._sessions[session_id]
         if session["status"] != SessionStatus.CREATED.value:
             logger.warning(f"Cannot start session {session_id} in status: {session['status']}")
             return False
-        
+
+        # 预创建 ASR 引擎以减少首次识别延迟
+        try:
+            from app.api.websocket import get_asr_service
+            asr_service = get_asr_service()
+            config_name = session.get("config_name", "balanced")
+
+            logger.info(f"Pre-creating ASR engine for session {session_id} with config {config_name}")
+            success = await asr_service.create_asr_engine(session_id, config_name)
+
+            if not success:
+                logger.error(f"Failed to pre-create ASR engine for session {session_id}")
+                return False
+
+        except Exception as e:
+            logger.error(f"Error pre-creating ASR engine for session {session_id}: {e}")
+            return False
+
         session["status"] = SessionStatus.ACTIVE.value
         session["updated_at"] = datetime.utcnow()
-        
+
         logger.info(f"Started session: {session_id}")
         return True
     

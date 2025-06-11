@@ -302,7 +302,10 @@ async def websocket_audio_create_endpoint(
             config_name=config_name,
             language=language
         )
-        
+
+        # 立即启动会话并预创建 ASR 引擎
+        await session_manager.start_session(session_id)
+
         # 重定向到具体会话的WebSocket处理
         await websocket_audio_endpoint(
             websocket, session_id, client_id,
