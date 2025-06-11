@@ -4,7 +4,7 @@ version = "0.1.0"
 description = ""
 authors = ["qiaogaojian <qiaogaojian@vip.qq.com>"]
 readme = "README.md"
-packages = [{include = "src", from="."}]
+packages = [{include = "src", from="."},{include = "app", from="."}]
 
 [tool.poetry.dependencies]
 python = "^3.9"
@@ -14,6 +14,20 @@ sounddevice = "^0.4.6"
 rich = "^13.0.0"
 colorama = "^0.4.6"
 soundfile = "^0.12.1"
+# FastAPI相关依赖
+fastapi = "^0.104.0"
+uvicorn = {extras = ["standard"], version = "^0.24.0"}
+python-multipart = "^0.0.6"
+pydantic = "^2.0.0"
+pydantic-settings = "^2.0.0"
+# 开发和测试依赖
+pytest = {version = "^7.0.0", optional = true}
+pytest-asyncio = {version = "^0.21.0", optional = true}
+httpx = {version = "^0.25.0", optional = true}
+
+[tool.poetry.extras]
+test = ["pytest", "pytest-asyncio", "httpx"]
+
 
 [build-system]
 requires = ["poetry-core"]

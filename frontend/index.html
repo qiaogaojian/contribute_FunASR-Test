@@ -104,8 +104,9 @@
 
             connect() {
                 try {
-                    this.ws = new WebSocket('ws://localhost:8766');
-                    
+                    // 连接到 FastAPI WebSocket 端点
+                    this.ws = new WebSocket('ws://localhost:8000/ws/audio');
+
                     this.ws.onopen = () => {
                         console.log('WebSocket连接已建立');
                         this.updateStatus('connected', '已连接');
@@ -120,6 +121,8 @@
                             this.handleMessage(data);
                         } catch (e) {
                             console.error('解析消息失败:', e);
+                            // 尝试直接显示文本消息
+                            this.displayText(event.data, true);
                         }
                     };
 
@@ -151,20 +154,31 @@
                 switch (data.type) {
                     case 'welcome':
                         console.log('收到欢迎消息:', data.message);
-                        if (data.current_text) {
-                            this.displayText(data.current_text, true);
+                        if (data.session_info && data.session_info.current_text) {
+                            this.displayText(data.session_info.current_text, true);
                         }
                         break;
-                        
+
                     case 'asr_result':
-                        this.displayText(data.text, data.is_final);
+                    case 'recognition_result':
+                        // 处理 FastAPI 格式的识别结果
+                        if (data.result) {
+                            this.displayText(data.result.text, data.result.is_final);
+                        } else {
+                            this.displayText(data.text, data.is_final);
+                        }
                         this.updateLastUpdate();
                         break;
-                        
+
                     case 'pong':
                         // 心跳响应
                         break;
-                        
+
+                    case 'error':
+                        console.error('服务器错误:', data.error_message);
+                        this.updateStatus('error', '服务器错误');
+                        break;
+
                     default:
                         console.log('未知消息类型:', data);
                 }
@@ -310,12 +324,8 @@
                             // 转换为16位PCM
                             const pcmData = this.float32ToPCM16(inputBuffer);
                             
-                            // 发送音频数据到服务器
-                            this.ws.send(JSON.stringify({
-                                type: 'audio_data',
-                                data: Array.from(pcmData),
-                                sampleRate: 16000
-                            }));
+                            // 发送音频数据到服务器（二进制格式）
+                            this.ws.send(pcmData.buffer);
                         }
                     };
 
