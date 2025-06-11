@@ -18,7 +18,7 @@ from funasr import AutoModel
 
 # 导入配置文件
 try:
-    from src.asr_config import get_config, SENTENCE_END_PUNCTUATION, AVOID_SPLIT_PUNCTUATION, MIN_SENTENCE_LENGTH, COMPLETE_SENTENCE_MIN_LENGTH
+    from src.config.asr_config import get_config, SENTENCE_END_PUNCTUATION, AVOID_SPLIT_PUNCTUATION, MIN_SENTENCE_LENGTH, COMPLETE_SENTENCE_MIN_LENGTH
 except ImportError:
     print("警告: 无法导入配置文件，使用默认配置")
     # 默认配置

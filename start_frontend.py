@@ -28,7 +28,7 @@ def start_websocket_server():
     try:
         # 导入并启动服务器
         sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
-        from websocket_server import main
+        from src.websocket_server import main
         import asyncio
         
         print("🚀 启动WebSocket服务器...")

@@ -22,12 +22,12 @@ def main():
             # 命令行参数模式
             config_name = sys.argv[1]
             subprocess.run([
-                str(python_exe), '-m', 'src.config_switcher', config_name
+                str(python_exe), '-m', 'src.config.config_switcher', config_name
             ])
         else:
             # 交互模式
             subprocess.run([
-                str(python_exe), '-m', 'src.config_switcher'
+                str(python_exe), '-m', 'src.config.config_switcher'
             ])
     except Exception as e:
         print(f"❌ 配置切换失败: {e}")
