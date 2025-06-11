@@ -15,7 +15,7 @@ try:
 except ImportError:
     print("警告: 无法导入配置文件，使用默认配置")
     # 默认配置
-    def get_config(name="balanced"):
+    def get_config(name="meeting"):
         return {
             "vad_config": {
                 "max_end_silence_time": 1200,
@@ -34,7 +34,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 class WebSocketASR:
-    def __init__(self, config_name="balanced"):
+    def __init__(self, config_name="meeting"):
         self.config = get_config(config_name)
         self.model = None
         self.cache = {}
