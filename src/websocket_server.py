@@ -10,6 +10,9 @@ import threading
 import json
 import logging
 from datetime import datetime
+import numpy as np
+import wave
+import io
 
 import websockets
 
@@ -24,6 +27,25 @@ class ASRWebSocketServer:
         self.clients = set()
         self.latest_text = ""
         self.is_running = False
+        
+        # 音频处理相关
+        self.audio_buffer = []
+        self.sample_rate = 16000
+        self.chunk_size = 1024
+        
+        # 导入ASR模块
+        try:
+            import sys
+            import os
+            sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            from src.asr.websocket_asr import WebSocketASR
+            self.asr_engine = WebSocketASR()
+            self.use_local_asr = True
+            logger.info("已加载WebSocket ASR引擎")
+        except ImportError as e:
+            logger.warning(f"无法加载WebSocket ASR引擎: {e}")
+            self.asr_engine = None
+            self.use_local_asr = False
 
     async def register_client(self, websocket):
         """注册新的WebSocket客户端"""
@@ -74,6 +96,58 @@ class ASRWebSocketServer:
         # 移除断开连接的客户端
         for client in disconnected_clients:
             self.clients.discard(client)
+            
+    async def process_audio_data(self, data):
+        """处理音频数据"""
+        try:
+            audio_data = data.get('data', [])
+            sample_rate = data.get('sampleRate', 16000)
+            
+            if not audio_data:
+                return
+                
+            # 转换为numpy数组
+            audio_array = np.array(audio_data, dtype=np.int16)
+            
+            # 添加到音频缓冲区
+            self.audio_buffer.extend(audio_array)
+            
+            # 当缓冲区达到一定大小时进行ASR处理
+            if len(self.audio_buffer) >= self.chunk_size:
+                await self.process_audio_chunk()
+                
+        except Exception as e:
+            logger.error(f"处理音频数据失败: {e}")
+            
+    async def process_audio_chunk(self):
+        """处理音频块"""
+        try:
+            if not self.use_local_asr or not self.asr_engine:
+                # 如果没有本地ASR引擎，清空缓冲区
+                self.audio_buffer = []
+                return
+                
+            # 获取音频数据
+            chunk_data = np.array(self.audio_buffer[:self.chunk_size], dtype=np.int16)
+            self.audio_buffer = self.audio_buffer[self.chunk_size:]
+            
+            # 转换为float32格式
+            audio_float = chunk_data.astype(np.float32) / 32768.0
+            
+            # 调用ASR引擎进行识别
+            result = await asyncio.get_event_loop().run_in_executor(
+                None, self.asr_engine.recognize_chunk, audio_float
+            )
+            
+            if result and result.strip():
+                # 广播识别结果
+                await self.broadcast_text(result, True)
+                logger.info(f"ASR识别结果: {result}")
+                
+        except Exception as e:
+            logger.error(f"处理音频块失败: {e}")
+            # 清空缓冲区以避免错误累积
+            self.audio_buffer = []
             
     def udp_listener(self):
         """UDP监听器，接收ASR数据"""
@@ -127,8 +201,15 @@ class ASRWebSocketServer:
                 # 处理客户端发送的消息
                 try:
                     data = json.loads(message)
-                    if data.get("type") == "ping":
+                    message_type = data.get("type")
+                    
+                    if message_type == "ping":
                         await websocket.send(json.dumps({"type": "pong"}))
+                    elif message_type == "audio_data":
+                        await self.process_audio_data(data)
+                    else:
+                        logger.warning(f"未知消息类型: {message_type}")
+                        
                 except json.JSONDecodeError:
                     logger.warning(f"收到无效JSON消息: {message}")
         except websockets.exceptions.ConnectionClosed:

@@ -28,6 +28,7 @@
 
         <footer class="footer">
             <div class="controls">
+                <button class="btn btn-record" id="recordBtn">🎤 开始录音</button>
                 <button class="btn btn-clear" id="clearBtn">清空文本</button>
                 <button class="btn btn-save" id="saveBtn">保存文本</button>
                 <button class="btn btn-reconnect" id="reconnectBtn">重新连接</button>
@@ -49,6 +50,14 @@
                 this.reconnectDelay = 2000;
                 this.isManualDisconnect = false;
                 
+                // 音频录制相关
+                this.mediaRecorder = null;
+                this.audioStream = null;
+                this.isRecording = false;
+                this.audioChunks = [];
+                this.audioContext = null;
+                this.processor = null;
+                
                 this.initElements();
                 this.bindEvents();
                 this.connect();
@@ -58,6 +67,7 @@
                 this.statusDot = document.getElementById('statusDot');
                 this.statusText = document.getElementById('statusText');
                 this.textDisplay = document.getElementById('textDisplay');
+                this.recordBtn = document.getElementById('recordBtn');
                 this.clearBtn = document.getElementById('clearBtn');
                 this.saveBtn = document.getElementById('saveBtn');
                 this.reconnectBtn = document.getElementById('reconnectBtn');
@@ -66,6 +76,7 @@
             }
 
             bindEvents() {
+                this.recordBtn.addEventListener('click', () => this.toggleRecording());
                 this.clearBtn.addEventListener('click', () => this.clearText());
                 this.saveBtn.addEventListener('click', () => this.saveText());
                 this.reconnectBtn.addEventListener('click', () => this.reconnect());
@@ -259,6 +270,102 @@
                 }
                 this.reconnectAttempts = 0;
                 setTimeout(() => this.connect(), 500);
+            }
+
+            // 音频录制相关方法
+            async toggleRecording() {
+                if (!this.isRecording) {
+                    await this.startRecording();
+                } else {
+                    this.stopRecording();
+                }
+            }
+
+            async startRecording() {
+                try {
+                    // 请求麦克风权限
+                    this.audioStream = await navigator.mediaDevices.getUserMedia({
+                        audio: {
+                            sampleRate: 16000,
+                            channelCount: 1,
+                            echoCancellation: true,
+                            noiseSuppression: true
+                        }
+                    });
+
+                    // 创建音频上下文
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)({
+                        sampleRate: 16000
+                    });
+
+                    const source = this.audioContext.createMediaStreamSource(this.audioStream);
+                    
+                    // 创建音频处理器 - 使用更小的缓冲区提高实时性
+                    this.processor = this.audioContext.createScriptProcessor(1024, 1, 1);
+                    
+                    this.processor.onaudioprocess = (event) => {
+                        if (this.isRecording && this.ws && this.ws.readyState === WebSocket.OPEN) {
+                            const inputBuffer = event.inputBuffer.getChannelData(0);
+                            
+                            // 转换为16位PCM
+                            const pcmData = this.float32ToPCM16(inputBuffer);
+                            
+                            // 发送音频数据到服务器
+                            this.ws.send(JSON.stringify({
+                                type: 'audio_data',
+                                data: Array.from(pcmData),
+                                sampleRate: 16000
+                            }));
+                        }
+                    };
+
+                    source.connect(this.processor);
+                    this.processor.connect(this.audioContext.destination);
+
+                    this.isRecording = true;
+                    this.recordBtn.textContent = '🛑 停止录音';
+                    this.recordBtn.classList.add('recording');
+                    
+                    console.log('开始录音');
+                    
+                } catch (error) {
+                    console.error('启动录音失败:', error);
+                    alert('无法访问麦克风，请检查权限设置');
+                }
+            }
+
+            stopRecording() {
+                this.isRecording = false;
+                
+                if (this.processor) {
+                    this.processor.disconnect();
+                    this.processor = null;
+                }
+                
+                if (this.audioContext) {
+                    this.audioContext.close();
+                    this.audioContext = null;
+                }
+                
+                if (this.audioStream) {
+                    this.audioStream.getTracks().forEach(track => track.stop());
+                    this.audioStream = null;
+                }
+                
+                this.recordBtn.textContent = '🎤 开始录音';
+                this.recordBtn.classList.remove('recording');
+                
+                console.log('停止录音');
+            }
+
+            // 将Float32Array转换为16位PCM
+            float32ToPCM16(float32Array) {
+                const pcm16 = new Int16Array(float32Array.length);
+                for (let i = 0; i < float32Array.length; i++) {
+                    const sample = Math.max(-1, Math.min(1, float32Array[i]));
+                    pcm16[i] = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+                }
+                return pcm16;
             }
 
             // 发送心跳
