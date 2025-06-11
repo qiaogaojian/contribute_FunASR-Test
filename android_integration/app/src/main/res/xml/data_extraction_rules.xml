@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data-extraction-rules>
+    <cloud-backup>
+        <!-- 允许云备份，但排除敏感数据 -->
+        <include domain="file" path="." />
+        <include domain="database" path="." />
+        <include domain="sharedpref" path="." />
+        
+        <!-- 排除敏感文件 -->
+        <exclude domain="file" path="cache/" />
+        <exclude domain="file" path="temp/" />
+        <exclude domain="sharedpref" path="sensitive_prefs.xml" />
+    </cloud-backup>
+    
+    <device-transfer>
+        <!-- 设备间传输规则 -->
+        <include domain="file" path="." />
+        <include domain="database" path="." />
+        <include domain="sharedpref" path="." />
+        
+        <!-- 排除临时文件 -->
+        <exclude domain="file" path="cache/" />
+        <exclude domain="file" path="temp/" />
+    </device-transfer>
+</data-extraction-rules>

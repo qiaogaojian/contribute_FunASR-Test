@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- 包含需要备份的数据 -->
+    <include domain="file" path="." />
+    <include domain="database" path="." />
+    <include domain="sharedpref" path="." />
+    
+    <!-- 排除不需要备份的数据 -->
+    <exclude domain="file" path="cache/" />
+    <exclude domain="file" path="temp/" />
+    <exclude domain="file" path="audio_cache/" />
+    
+    <!-- 排除敏感的共享首选项 -->
+    <exclude domain="sharedpref" path="device_prefs.xml" />
+    <exclude domain="sharedpref" path="session_prefs.xml" />
+    
+    <!-- 排除外部存储的临时文件 -->
+<!--    <exclude domain="external" path="Android/data/com.example.asrclient/cache/" />-->
+</full-backup-content>
