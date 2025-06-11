@@ -284,7 +284,7 @@ async def handle_audio_data(
 async def websocket_audio_create_endpoint(
     websocket: WebSocket,
     client_id: str = Query(default=None, description="客户端ID"),
-    config_name: str = Query(default="balanced", description="ASR配置名称"),
+    config_name: str = Query(default="meeting", description="ASR配置名称"),
     language: str = Query(default="zh-cn", description="语言"),
     conn_manager: ConnectionManager = Depends(get_connection_manager),
     session_manager: SessionManager = Depends(get_session_manager)

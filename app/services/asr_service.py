@@ -42,7 +42,7 @@ class ASRService:
                 logger.error(f"Failed to initialize ASR service: {e}")
                 raise
     
-    async def create_asr_engine(self, session_id: str, config_name: str = "balanced"):
+    async def create_asr_engine(self, session_id: str, config_name: str = "meeting"):
         """为会话创建ASR引擎"""
         await self._ensure_initialized()
         
@@ -69,7 +69,7 @@ class ASRService:
             if not asr_engine:
                 # 如果引擎不存在，尝试创建（兜底机制）
                 logger.warning(f"ASR engine not found for session {session_id}, creating on-demand")
-                config_name = self._session_configs.get(session_id, "balanced")
+                config_name = self._session_configs.get(session_id, "meeting")
                 await self.create_asr_engine(session_id, config_name)
                 asr_engine = self._asr_engines.get(session_id)
 
@@ -154,7 +154,7 @@ class ASRService:
         try:
             # 确保会话有ASR引擎
             if session_id not in self._asr_engines:
-                config_name = self._session_configs.get(session_id, "balanced")
+                config_name = self._session_configs.get(session_id, "meeting")
                 await self.create_asr_engine(session_id, config_name)
             
             asr_engine = self._asr_engines.get(session_id)
@@ -275,4 +275,4 @@ class ASRService:
             return list_configs()
         except Exception as e:
             logger.error(f"Failed to get available configs: {e}")
-            return ["balanced"]  # 返回默认配置
+            return ["meeting"]  # 返回默认配置

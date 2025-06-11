@@ -41,7 +41,7 @@ class SessionManager:
         self,
         client_id: str,
         user_id: Optional[str] = None,
-        config_name: str = "balanced",
+        config_name: str = "meeting",
         language: str = "zh-cn",
         sample_rate: int = 16000,
         metadata: Optional[Dict[str, Any]] = None
@@ -109,7 +109,7 @@ class SessionManager:
         try:
             from app.api.websocket import get_asr_service
             asr_service = get_asr_service()
-            config_name = session.get("config_name", "balanced")
+            config_name = session.get("config_name", "meeting")
 
             logger.info(f"Pre-creating ASR engine for session {session_id} with config {config_name}")
             success = await asr_service.create_asr_engine(session_id, config_name)

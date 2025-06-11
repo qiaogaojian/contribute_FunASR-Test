@@ -49,7 +49,7 @@ class Settings(BaseSettings):
     )
     
     # 默认ASR配置
-    default_asr_config: str = Field(default="balanced", description="默认ASR配置名称")
+    default_asr_config: str = Field(default="meeting", description="默认ASR配置名称")
     asr_device: str = Field(default="cuda", description="ASR设备")
     asr_ncpu: int = Field(default=4, description="CPU核心数")
     asr_ngpu: int = Field(default=1, description="GPU数量")

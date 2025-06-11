@@ -95,7 +95,7 @@ def create_app() -> FastAPI:
 
             # 创建一个预热会话
             warmup_session_id = "warmup_session"
-            success = await asr_service.create_asr_engine(warmup_session_id, "balanced")
+            success = await asr_service.create_asr_engine(warmup_session_id, "meeting")
 
             if success:
                 logger.info("✅ ASR service warmed up successfully")
