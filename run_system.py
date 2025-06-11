@@ -117,7 +117,7 @@ def main():
     time.sleep(2)
     
     # 启动ASR服务（阻塞）
-    run_asr_service()
+    # run_asr_service()
     
     print("\n✅ 系统已停止")
 
