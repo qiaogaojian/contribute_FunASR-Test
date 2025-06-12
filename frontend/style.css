@@ -542,6 +542,8 @@ body {
     color: #667eea;
 }
 
+/* 移除优化选项的特殊样式，保持与其他选项一致 */
+
 .summary-result {
     min-height: 200px;
     border: 2px solid #e9ecef;
@@ -601,6 +603,16 @@ body {
 .summary-content li {
     margin: 8px 0;
     padding: 5px 0;
+}
+
+/* 时间戳通用样式（适用于所有类型） */
+.summary-content .timestamp {
+    background: #e9ecef;
+    color: #495057;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-weight: bold;
 }
 
 .modal-footer {

@@ -62,6 +62,10 @@
                             <input type="radio" name="summaryType" value="action">
                             行动项总结 (待办事项)
                         </label>
+                        <label>
+                            <input type="radio" name="summaryType" value="optimize">
+                            优化语音识别文本 (修正错误)
+                        </label>
                     </div>
                     <div class="summary-result" id="summaryResult">
                         <div class="loading" id="summaryLoading" style="display: none;">
@@ -499,6 +503,16 @@
                 // 获取总结类型
                 const summaryType = document.querySelector('input[name="summaryType"]:checked').value;
 
+                // 根据类型显示相应的加载提示
+                const loadingText = this.summaryLoading.querySelector('p');
+                const loadingMessages = {
+                    'brief': '正在生成简要总结，请稍候...',
+                    'detailed': '正在生成详细总结，请稍候...',
+                    'action': '正在提取行动项，请稍候...',
+                    'optimize': '正在优化语音识别文本，请稍候...'
+                };
+                loadingText.textContent = loadingMessages[summaryType] || '正在生成会议总结，请稍候...';
+
                 // 显示加载状态
                 this.summaryLoading.style.display = 'block';
                 this.summaryContent.style.display = 'none';
@@ -506,7 +520,7 @@
 
                 try {
                     const summary = await this.callLLMSummary(meetingText, summaryType);
-                    this.displaySummary(summary);
+                    this.displaySummary(summary, summaryType);
                 } catch (error) {
                     console.error('生成总结失败:', error);
                     this.summaryLoading.style.display = 'none';
@@ -530,22 +544,34 @@
 
             async callLLMSummary(meetingText, summaryType) {
                 const prompts = {
-                    brief: `请对以下会议记录进行简要总结，提取关键要点：
+                    brief: `你是一个专业的会议记录分析专家。以下是通过语音识别(ASR)技术转换的会议记录文本，由于语音识别的局限性，文本中可能存在同音字错误、标点符号缺失、语法不通顺等问题。请在理解原意的基础上，提取关键要点并进行简要总结。
 
-会议记录：
+**原始ASR会议记录：**
 ${meetingText}
 
-请按以下格式总结：
-## 会议简要总结
+**分析要求：**
+1. **智能理解**: 根据上下文理解可能的同音字错误和语法问题
+2. **关键信息提取**: 重点关注决策、行动项、重要讨论点
+3. **逻辑梳理**: 整理会议的主要脉络和核心内容
+4. **准确表达**: 用准确、专业的语言表达总结内容
 
-### 主要议题
-- [列出主要讨论的议题]
+**输出格式：**
+## 📋 会议简要总结
 
-### 关键决定
-- [列出重要决定和结论]
+### 🎯 主要议题
+- [基于语境理解，列出主要讨论的议题]
 
-### 重要信息
-- [列出其他重要信息]`,
+### ✅ 关键决定
+- [列出重要决定和结论，修正可能的表达错误]
+
+### 💡 重要信息
+- [列出其他重要信息，确保表达准确清晰]
+
+### 📝 备注说明
+- 本总结基于ASR识别文本生成，已尽量修正明显的识别错误
+- 如有关键信息表述不清，建议参考原始录音进行确认
+
+请确保总结内容准确反映会议要点，语言表达清晰专业。`,
 
                     detailed: `请对以下会议记录进行详细分析和总结：
 
@@ -590,7 +616,49 @@ ${meetingText}
 - [下次会议需要讨论的内容]
 
 ### 注意事项
-- [需要特别注意的事项]`
+- [需要特别注意的事项]`,
+
+                    optimize: `你是一个专业的语音识别文本优化专家。以下是通过ASR(语音识别)技术转换的会议记录文本，由于语音识别技术的局限性，文本中存在各种识别错误。请帮助我优化和修正这些文本，使其更加准确、流畅。
+
+**原始ASR识别文本：**
+${meetingText}
+
+**详细优化要求：**
+
+1. **同音字错误修正**：
+   - 修正常见同音字错误：在/再、的/得、做/作、那/哪、因为/应为、以后/已后、现在/现再等
+   - 根据上下文语境选择正确用字
+   - 特别注意动词、介词、助词的正确使用
+
+2. **标点符号优化**：
+   - 补充缺失的逗号、句号、问号、感叹号、冒号、分号
+   - 优化语句断句，提升文本可读性
+   - 为直接引语添加引号
+   - 合理使用顿号分隔并列成分
+
+3. **语法和表达优化**：
+   - 修正语序错误和不通顺的表达
+   - 补充缺失的主语、谓语、宾语
+   - 修正时态和语态错误
+   - 优化口语化表达，使其更加书面化和专业
+
+4. **格式和结构保持**：
+   - 严格保持原始时间戳格式：[HH:MM:SS]
+   - 保持会议记录的时间顺序
+   - 维持发言人信息（如有）
+   - 保持段落结构的逻辑性
+
+5. **内容准确性**：
+   - 保持原意不变，只进行必要的修正
+   - 对专业术语和人名根据上下文进行合理推断
+   - 不添加原文中没有的信息
+   - 保持会议内容的真实性和完整性
+
+**输出格式要求：**
+
+[在此输出完整的优化后会议记录，严格保持时间戳格式]
+
+请务必确保优化后的文本语义准确、语言流畅、逻辑清晰，同时完全保持会议记录的原始含义和重要信息。`
                 };
 
                 const requestData = {
@@ -599,7 +667,7 @@ ${meetingText}
                         { role: 'user', content: prompts[summaryType] }
                     ],
                     temperature: 0.3,
-                    max_tokens: 1000
+                    max_tokens: summaryType === 'optimize' ? 2000 : 1000
                 };
 
                 const response = await fetch('/llm/chat', {
@@ -619,35 +687,69 @@ ${meetingText}
                 return data.content;
             }
 
-            displaySummary(summary) {
+            displaySummary(summary, summaryType) {
                 this.summaryLoading.style.display = 'none';
                 this.summaryContent.style.display = 'block';
                 this.saveSummaryBtn.style.display = 'inline-block';
                 this.copySummaryBtn.style.display = 'inline-block';
+
+                // 根据类型更新保存按钮文本
+                const buttonTexts = {
+                    'brief': '保存简要总结',
+                    'detailed': '保存详细总结',
+                    'action': '保存行动项',
+                    'optimize': '保存优化文本'
+                };
+                this.saveSummaryBtn.textContent = buttonTexts[summaryType] || '保存总结';
 
                 // 将Markdown格式转换为HTML显示
                 this.summaryContent.innerHTML = this.markdownToHtml(summary);
             }
 
             markdownToHtml(markdown) {
-                return markdown
+                let html = markdown
                     .replace(/^## (.*$)/gm, '<h2>$1</h2>')
                     .replace(/^### (.*$)/gm, '<h3>$1</h3>')
                     .replace(/^- (.*$)/gm, '<li>$1</li>')
                     .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
                     .replace(/\n\n/g, '<br><br>')
                     .replace(/\n/g, '<br>');
+
+                // 为时间戳添加特殊样式（格式：[HH:MM:SS]）
+                html = html.replace(/\[(\d{2}:\d{2}:\d{2})\]/g, '<span class="timestamp">[$1]</span>');
+
+                return html;
             }
 
             saveSummary() {
                 const summaryText = this.summaryContent.textContent || this.summaryContent.innerText;
                 const meetingDate = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+                const summaryType = document.querySelector('input[name="summaryType"]:checked').value;
+
+                // 根据类型设置不同的文件名
+                let fileName;
+                switch(summaryType) {
+                    case 'optimize':
+                        fileName = `优化后的会议记录_${meetingDate}.txt`;
+                        break;
+                    case 'brief':
+                        fileName = `会议简要总结_${meetingDate}.txt`;
+                        break;
+                    case 'detailed':
+                        fileName = `会议详细总结_${meetingDate}.txt`;
+                        break;
+                    case 'action':
+                        fileName = `会议行动项_${meetingDate}.txt`;
+                        break;
+                    default:
+                        fileName = `会议总结_${meetingDate}.txt`;
+                }
 
                 const blob = new Blob([summaryText], { type: 'text/plain;charset=utf-8' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `会议总结_${meetingDate}.txt`;
+                a.download = fileName;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
