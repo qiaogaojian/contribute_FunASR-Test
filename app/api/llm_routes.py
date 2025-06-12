@@ -8,6 +8,7 @@ LLM API路由
 from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 import json
 import asyncio
 
@@ -95,7 +96,7 @@ async def _initialize_providers(manager: LLMManager, settings):
 
 
 # API数据模型
-class ChatRequest(BaseResponse):
+class ChatRequest(BaseModel):
     """聊天请求模型"""
     model: str
     messages: List[Dict[str, str]]
