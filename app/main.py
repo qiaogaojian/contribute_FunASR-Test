@@ -79,6 +79,18 @@ def create_app() -> FastAPI:
                 return HTMLResponse(content=index_file.read_text(encoding='utf-8'))
             return HTMLResponse("<h1>ASR Service</h1><p>Frontend not found</p>")
 
+        @app.get("/style.css")
+        async def serve_css():
+            """提供CSS样式文件"""
+            css_file = frontend_path / "style.css"
+            if css_file.exists():
+                from fastapi.responses import Response
+                return Response(
+                    content=css_file.read_text(encoding='utf-8'),
+                    media_type="text/css"
+                )
+            return Response("/* CSS not found */", media_type="text/css")
+
     # LLM测试页面
     @app.get("/llm-test", response_class=HTMLResponse)
     async def serve_llm_test():
