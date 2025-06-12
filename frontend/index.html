@@ -62,10 +62,6 @@
                             <input type="radio" name="summaryType" value="action">
                             行动项总结 (待办事项)
                         </label>
-                        <label>
-                            <input type="radio" name="summaryType" value="optimize">
-                            优化语音识别文本 (修正错误)
-                        </label>
                     </div>
                     <div class="summary-result" id="summaryResult">
                         <div class="loading" id="summaryLoading" style="display: none;">
@@ -503,13 +499,12 @@
                 // 获取总结类型
                 const summaryType = document.querySelector('input[name="summaryType"]:checked').value;
 
-                // 根据类型显示相应的加载提示
+                // 显示加载提示
                 const loadingText = this.summaryLoading.querySelector('p');
                 const loadingMessages = {
                     'brief': '正在生成简要总结，请稍候...',
                     'detailed': '正在生成详细总结，请稍候...',
-                    'action': '正在提取行动项，请稍候...',
-                    'optimize': '正在优化语音识别文本，请稍候...'
+                    'action': '正在提取行动项，请稍候...'
                 };
                 loadingText.textContent = loadingMessages[summaryType] || '正在生成会议总结，请稍候...';
 
@@ -519,7 +514,8 @@
                 this.generateSummaryBtn.style.display = 'none';
 
                 try {
-                    const summary = await this.callLLMSummary(meetingText, summaryType);
+                    // 调用新的会议总结API
+                    const summary = await this.callMeetingSummaryAPI(meetingText, summaryType);
                     this.displaySummary(summary, summaryType);
                 } catch (error) {
                     console.error('生成总结失败:', error);
@@ -542,74 +538,111 @@
                 return meetingText;
             }
 
-            async callLLMSummary(meetingText, summaryType) {
-                const prompts = {
-                    brief: `你是一个专业的会议记录分析专家。以下是通过语音识别(ASR)技术转换的会议记录文本，由于语音识别的局限性，文本中可能存在同音字错误、标点符号缺失、语法不通顺等问题。请在理解原意的基础上，提取关键要点并进行简要总结。
+            async callMeetingSummaryAPI(meetingText, summaryType) {
+                /**
+                 * 调用新的会议总结API
+                 * 该API会自动进行两步处理：1. 优化ASR文本 2. 生成对应总结
+                 */
+                const requestData = {
+                    meeting_text: meetingText,
+                    summary_type: summaryType,
+                    model: 'gemini-1.5-flash',
+                    temperature: 0.3
+                };
 
-**原始ASR会议记录：**
+                const response = await fetch('/api/meeting/summary', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || '请求失败');
+                }
+
+                const data = await response.json();
+
+                // 如果开启调试模式，可以在控制台查看优化后的文本
+                if (data.optimized_text) {
+                    console.log('优化后的文本:', data.optimized_text);
+                }
+
+                return data.summary;
+            }
+
+            async callLLMSummary(meetingText, summaryType) {
+                /**
+                 * 原有的LLM调用方法（保留作为备用）
+                 * 注意：这个方法现在只用于向后兼容，推荐使用callMeetingSummaryAPI
+                 */
+                const prompts = {
+                    brief: `你是一个专业的会议记录分析专家。以下是会议记录文本，请提取关键要点并进行简要总结。
+
+**会议记录：**
 ${meetingText}
 
 **分析要求：**
-1. **智能理解**: 根据上下文理解可能的同音字错误和语法问题
-2. **关键信息提取**: 重点关注决策、行动项、重要讨论点
-3. **逻辑梳理**: 整理会议的主要脉络和核心内容
-4. **准确表达**: 用准确、专业的语言表达总结内容
+1. **关键信息提取**: 重点关注决策、行动项、重要讨论点
+2. **逻辑梳理**: 整理会议的主要脉络和核心内容
+3. **准确表达**: 用准确、专业的语言表达总结内容
 
 **输出格式：**
 ## 📋 会议简要总结
 
 ### 🎯 主要议题
-- [基于语境理解，列出主要讨论的议题]
+- [列出主要讨论的议题]
 
 ### ✅ 关键决定
-- [列出重要决定和结论，修正可能的表达错误]
+- [列出重要决定和结论]
 
 ### 💡 重要信息
-- [列出其他重要信息，确保表达准确清晰]
+- [列出其他重要信息]
 
 `,
 
-                    detailed: `你是一个资深的会议分析师，擅长从语音识别文本中提取和整理完整的会议信息。以下是通过ASR技术转换的会议记录，文本中可能包含识别错误，请基于语境理解进行详细分析和总结。
+                    detailed: `你是一个资深的会议分析师，擅长提取和整理完整的会议信息。以下是会议记录文本，请进行详细分析和总结。
 
-**原始ASR会议记录：**
+**会议记录：**
 ${meetingText}
 
 **分析要求：**
-1. **语境理解**: 智能识别和理解可能的同音字、语法错误
-2. **全面分析**: 深入分析会议的各个方面和层次
-3. **逻辑重构**: 重新组织和梳理会议内容的逻辑结构
-4. **专业表达**: 使用准确、专业的商务语言进行表述
-5. **细节保留**: 保留重要的讨论细节和关键信息
+1. **全面分析**: 深入分析会议的各个方面和层次
+2. **逻辑梳理**: 组织和梳理会议内容的逻辑结构
+3. **专业表达**: 使用准确、专业的商务语言进行表述
+4. **细节保留**: 保留重要的讨论细节和关键信息
 
 **输出格式：**
 ## 📊 会议详细总结
 
 ### 🎯 会议概述
-[基于ASR文本理解，描述会议的整体情况、背景和目标]
+[描述会议的整体情况、背景和目标]
 
 ### 💬 讨论内容
-[详细描述各个议题的讨论过程，修正表达错误，保持逻辑清晰]
+[详细描述各个议题的讨论过程，保持逻辑清晰]
 
 ### 📋 决策事项
-[列出所有决定和决策，确保表述准确无歧义]
+[列出所有决定和决策]
 
 ### 🔍 关键观点
-[记录重要的观点和建议，用专业语言重新表述]
+[记录重要的观点和建议]
 
 ### 📅 后续安排
-[整理后续计划或安排，确保时间、责任人等信息准确]
+[整理后续计划或安排]
 
 `,
 
-                    action: `你是一个专业的项目管理专家，擅长从会议记录中提取可执行的行动项。以下是通过ASR技术转换的会议记录，文本中可能存在识别错误，请基于语境理解提取准确的行动项和待办事项。
+                    action: `你是一个专业的项目管理专家，擅长从会议记录中提取可执行的行动项。以下是会议记录文本，请提取准确的行动项和待办事项。
 
-**原始ASR会议记录：**
+**会议记录：**
 ${meetingText}
 
 **提取要求：**
-1. **智能识别**: 从可能有错误的ASR文本中准确识别行动项
-2. **责任明确**: 尽量识别和明确任务的负责人
-3. **时间准确**: 准确提取时间节点，修正可能的时间表述错误
+1. **准确识别**: 准确识别会议中的行动项
+2. **责任明确**: 识别和明确任务的负责人
+3. **时间明确**: 准确提取时间节点和截止日期
 4. **任务具体**: 将模糊的表述转化为具体可执行的任务
 5. **优先级判断**: 根据讨论内容判断任务的重要性和紧急性
 
@@ -617,16 +650,16 @@ ${meetingText}
 ## 📋 行动项总结
 
 ### ✅ 待办事项
-- **任务**: [具体的待办任务，修正ASR识别错误]
+- **任务**: [具体的待办任务]
 - **负责人**: [负责人姓名或部门，如有提及]
-- **截止时间**: [准确的时间节点，修正时间表述]
+- **截止时间**: [时间节点]
 - **优先级**: [高/中/低，基于讨论内容判断]
 
 ### 🔄 跟进事项
-- [需要持续跟进的事项，确保表述清晰]
+- [需要持续跟进的事项]
 
 ### 📅 下次会议议题
-- [下次会议需要讨论的内容，整理表达]
+- [下次会议需要讨论的内容]
 
 ### ⚠️ 注意事项
 - [需要特别注意的事项和风险点]
@@ -720,8 +753,7 @@ ${meetingText}
                 const buttonTexts = {
                     'brief': '保存简要总结',
                     'detailed': '保存详细总结',
-                    'action': '保存行动项',
-                    'optimize': '保存优化文本'
+                    'action': '保存行动项'
                 };
                 this.saveSummaryBtn.textContent = buttonTexts[summaryType] || '保存总结';
 
@@ -752,9 +784,6 @@ ${meetingText}
                 // 根据类型设置不同的文件名
                 let fileName;
                 switch(summaryType) {
-                    case 'optimize':
-                        fileName = `优化后的会议记录_${meetingDate}.txt`;
-                        break;
                     case 'brief':
                         fileName = `会议简要总结_${meetingDate}.txt`;
                         break;

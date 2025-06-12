@@ -15,7 +15,7 @@ from pathlib import Path
 
 from app.core.config import get_settings
 from app.api import websocket, rest
-from app.api import llm_routes
+from app.api import llm_routes, meeting_summary
 
 # 配置日志
 logging.basicConfig(level=logging.INFO)
@@ -59,6 +59,7 @@ def create_app() -> FastAPI:
     app.include_router(websocket.router, prefix="/ws", tags=["WebSocket"])
     app.include_router(rest.router, prefix="/api/v1", tags=["REST API"])
     app.include_router(llm_routes.router, tags=["LLM"])
+    app.include_router(meeting_summary.router, tags=["Meeting Summary"])
     
     # 静态文件服务（前端）
     frontend_path = Path(__file__).parent.parent / "frontend"
