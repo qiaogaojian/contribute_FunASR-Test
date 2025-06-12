@@ -73,12 +73,29 @@ class Settings(BaseSettings):
     # 日志配置
     log_level: str = Field(default="INFO", description="日志级别")
     log_format: str = Field(default="%(asctime)s - %(name)s - %(levelname)s - %(message)s", description="日志格式")
-    
+
+    # LLM配置
+    llm_provider: str = Field(default="openai", description="默认LLM Provider")
+    llm_model: str = Field(default="gpt-3.5-turbo", description="默认LLM模型")
+    llm_api_key: Optional[str] = Field(default=None, description="LLM API密钥")
+    llm_base_url: Optional[str] = Field(default=None, description="LLM API基础URL")
+    llm_timeout: int = Field(default=30, description="LLM请求超时时间(秒)")
+    llm_max_retries: int = Field(default=3, description="LLM最大重试次数")
+    llm_temperature: float = Field(default=0.7, description="LLM温度参数")
+    llm_max_tokens: int = Field(default=1000, description="LLM最大生成token数")
+
+    # 多Provider配置支持
+    openai_api_key: Optional[str] = Field(default=None, description="OpenAI API密钥")
+    openai_base_url: Optional[str] = Field(default=None, description="OpenAI API基础URL")
+    anthropic_api_key: Optional[str] = Field(default=None, description="Anthropic API密钥")
+    google_api_key: Optional[str] = Field(default=None, description="Google API密钥")
+    ollama_base_url: Optional[str] = Field(default="http://localhost:11434", description="Ollama API基础URL")
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
         case_sensitive = False
-        
+
         # 环境变量前缀
         env_prefix = "ASR_"
     

@@ -15,6 +15,7 @@ from pathlib import Path
 
 from app.core.config import get_settings
 from app.api import websocket, rest
+from app.api import llm_routes
 
 # 配置日志
 logging.basicConfig(level=logging.INFO)
@@ -57,12 +58,19 @@ def create_app() -> FastAPI:
     # 注册路由
     app.include_router(websocket.router, prefix="/ws", tags=["WebSocket"])
     app.include_router(rest.router, prefix="/api/v1", tags=["REST API"])
+    app.include_router(llm_routes.router, tags=["LLM"])
     
     # 静态文件服务（前端）
     frontend_path = Path(__file__).parent.parent / "frontend"
+    static_path = Path(__file__).parent.parent / "static"
+
+    # 挂载静态文件目录
+    if static_path.exists():
+        app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
+
     if frontend_path.exists():
-        app.mount("/static", StaticFiles(directory=str(frontend_path)), name="static")
-        
+        app.mount("/frontend", StaticFiles(directory=str(frontend_path)), name="frontend")
+
         @app.get("/", response_class=HTMLResponse)
         async def serve_frontend():
             """提供前端页面"""
@@ -70,6 +78,15 @@ def create_app() -> FastAPI:
             if index_file.exists():
                 return HTMLResponse(content=index_file.read_text(encoding='utf-8'))
             return HTMLResponse("<h1>ASR Service</h1><p>Frontend not found</p>")
+
+    # LLM测试页面
+    @app.get("/llm-test", response_class=HTMLResponse)
+    async def serve_llm_test():
+        """提供LLM测试页面"""
+        llm_test_file = static_path / "llm_test.html"
+        if llm_test_file.exists():
+            return HTMLResponse(content=llm_test_file.read_text(encoding='utf-8'))
+        return HTMLResponse("<h1>LLM Test Page Not Found</h1>")
     
     # 健康检查
     @app.get("/health")

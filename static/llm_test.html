@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Provider 测试</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #fafafa;
+        }
+        
+        .section h2 {
+            color: #555;
+            margin-top: 0;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        
+        textarea {
+            height: 100px;
+            resize: vertical;
+        }
+        
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        
+        button:hover {
+            background-color: #0056b3;
+        }
+        
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        
+        .response {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        
+        .response.success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .response.error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        .response.streaming {
+            background-color: #e2e3e5;
+            border: 1px solid #d6d8db;
+            color: #383d41;
+        }
+        
+        .models-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .model-card {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 15px;
+        }
+        
+        .model-name {
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 8px;
+        }
+        
+        .model-info {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.4;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 LLM Provider 测试界面</h1>
+        
+        <!-- 系统状态 -->
+        <div class="section">
+            <h2>📊 系统状态</h2>
+            <button onclick="checkHealth()">检查健康状态</button>
+            <button onclick="loadProviders()">加载Providers</button>
+            <button onclick="loadModels()">加载模型列表</button>
+            <div id="healthResponse" class="response" style="display: none;"></div>
+        </div>
+        
+        <!-- 模型列表 -->
+        <div class="section">
+            <h2>📋 可用模型</h2>
+            <div id="modelsContainer">
+                <p>点击"加载模型列表"按钮查看可用模型</p>
+            </div>
+        </div>
+        
+        <!-- 聊天测试 -->
+        <div class="section">
+            <h2>💬 聊天测试</h2>
+            <div class="form-group">
+                <label for="modelSelect">选择模型:</label>
+                <select id="modelSelect">
+                    <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+                    <option value="gpt-4o">gpt-4o</option>
+                    <option value="claude-3-5-sonnet-20241022">claude-3-5-sonnet-20241022</option>
+                    <option value="gemini-2.0-flash-001">gemini-2.0-flash-001</option>
+                    <option value="llama3.2">llama3.2 (Ollama)</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="providerSelect">指定Provider (可选):</label>
+                <select id="providerSelect">
+                    <option value="">自动选择</option>
+                    <option value="openai">OpenAI</option>
+                    <option value="anthropic">Anthropic</option>
+                    <option value="google">Google</option>
+                    <option value="ollama">Ollama</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="messageInput">消息内容:</label>
+                <textarea id="messageInput" placeholder="请输入您的消息...">你好，请介绍一下自己。</textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="temperatureInput">温度 (0.0-2.0):</label>
+                <input type="number" id="temperatureInput" min="0" max="2" step="0.1" value="0.7">
+            </div>
+            
+            <div class="form-group">
+                <label for="maxTokensInput">最大Tokens:</label>
+                <input type="number" id="maxTokensInput" min="1" max="4000" value="500">
+            </div>
+            
+            <button onclick="sendMessage(false)">发送消息</button>
+            <button onclick="sendMessage(true)">流式发送</button>
+            <button onclick="clearResponse()">清空响应</button>
+            
+            <div id="chatResponse" class="response" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/llm';
+        
+        // 检查健康状态
+        async function checkHealth() {
+            const responseDiv = document.getElementById('healthResponse');
+            responseDiv.style.display = 'block';
+            responseDiv.className = 'response';
+            responseDiv.textContent = '正在检查健康状态...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    responseDiv.className = 'response success';
+                    responseDiv.textContent = `✅ 系统健康\n可用Providers: ${data.available_providers.join(', ')}\nProviders数量: ${data.providers_count}`;
+                } else {
+                    responseDiv.className = 'response error';
+                    responseDiv.textContent = `❌ 健康检查失败: ${data.detail || '未知错误'}`;
+                }
+            } catch (error) {
+                responseDiv.className = 'response error';
+                responseDiv.textContent = `❌ 网络错误: ${error.message}`;
+            }
+        }
+        
+        // 加载Providers
+        async function loadProviders() {
+            try {
+                const response = await fetch(`${API_BASE}/providers`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    console.log('可用Providers:', data.providers);
+                    alert(`可用Providers: ${data.providers.join(', ')}`);
+                } else {
+                    alert(`加载Providers失败: ${data.detail || '未知错误'}`);
+                }
+            } catch (error) {
+                alert(`网络错误: ${error.message}`);
+            }
+        }
+        
+        // 加载模型列表
+        async function loadModels() {
+            const container = document.getElementById('modelsContainer');
+            container.innerHTML = '<p>正在加载模型列表...</p>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/models`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    displayModels(data.models);
+                } else {
+                    container.innerHTML = `<p class="error">❌ 加载模型失败: ${data.detail || '未知错误'}</p>`;
+                }
+            } catch (error) {
+                container.innerHTML = `<p class="error">❌ 网络错误: ${error.message}</p>`;
+            }
+        }
+        
+        // 显示模型列表
+        function displayModels(models) {
+            const container = document.getElementById('modelsContainer');
+            
+            if (models.length === 0) {
+                container.innerHTML = '<p>没有可用的模型</p>';
+                return;
+            }
+            
+            const grid = document.createElement('div');
+            grid.className = 'models-grid';
+            
+            models.forEach(model => {
+                const card = document.createElement('div');
+                card.className = 'model-card';
+                
+                card.innerHTML = `
+                    <div class="model-name">${model.name}</div>
+                    <div class="model-info">
+                        <div>最大Tokens: ${model.max_tokens || 'N/A'}</div>
+                        <div>上下文窗口: ${model.context_window || 'N/A'}</div>
+                        <div>支持图像: ${model.supports_images ? '✅' : '❌'}</div>
+                        <div>支持工具: ${model.supports_tools ? '✅' : '❌'}</div>
+                        <div>输入价格: $${model.input_price || 'N/A'}/M tokens</div>
+                        <div>输出价格: $${model.output_price || 'N/A'}/M tokens</div>
+                        <div>描述: ${model.description || 'N/A'}</div>
+                    </div>
+                `;
+                
+                grid.appendChild(card);
+            });
+            
+            container.innerHTML = '';
+            container.appendChild(grid);
+        }
+        
+        // 发送消息
+        async function sendMessage(isStream = false) {
+            const model = document.getElementById('modelSelect').value;
+            const provider = document.getElementById('providerSelect').value;
+            const message = document.getElementById('messageInput').value;
+            const temperature = parseFloat(document.getElementById('temperatureInput').value);
+            const maxTokens = parseInt(document.getElementById('maxTokensInput').value);
+            
+            if (!message.trim()) {
+                alert('请输入消息内容');
+                return;
+            }
+            
+            const responseDiv = document.getElementById('chatResponse');
+            responseDiv.style.display = 'block';
+            responseDiv.className = 'response';
+            
+            const requestData = {
+                model: model,
+                messages: [
+                    { role: 'user', content: message }
+                ],
+                temperature: temperature,
+                max_tokens: maxTokens,
+                stream: isStream
+            };
+            
+            if (provider) {
+                requestData.provider = provider;
+            }
+            
+            if (isStream) {
+                await sendStreamingMessage(requestData, responseDiv);
+            } else {
+                await sendNormalMessage(requestData, responseDiv);
+            }
+        }
+        
+        // 发送普通消息
+        async function sendNormalMessage(requestData, responseDiv) {
+            responseDiv.textContent = '正在生成响应...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    responseDiv.className = 'response success';
+                    responseDiv.textContent = `✅ 响应成功\n\n模型: ${data.model}\n完成原因: ${data.finish_reason}\nToken使用: ${JSON.stringify(data.usage, null, 2)}\n\n响应内容:\n${data.content}`;
+                } else {
+                    responseDiv.className = 'response error';
+                    responseDiv.textContent = `❌ 请求失败: ${data.detail || '未知错误'}`;
+                }
+            } catch (error) {
+                responseDiv.className = 'response error';
+                responseDiv.textContent = `❌ 网络错误: ${error.message}`;
+            }
+        }
+        
+        // 发送流式消息
+        async function sendStreamingMessage(requestData, responseDiv) {
+            responseDiv.className = 'response streaming';
+            responseDiv.textContent = '🔄 正在建立流式连接...\n\n';
+            
+            try {
+                const response = await fetch(`${API_BASE}/chat/stream`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    responseDiv.className = 'response error';
+                    responseDiv.textContent = `❌ 流式请求失败: ${errorData.detail || '未知错误'}`;
+                    return;
+                }
+                
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let content = '';
+                
+                responseDiv.textContent = '📡 流式响应:\n\n';
+                
+                while (true) {
+                    const { done, value } = await reader.read();
+                    
+                    if (done) break;
+                    
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split('\n');
+                    
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const data = line.slice(6);
+                            
+                            if (data === '[DONE]') {
+                                responseDiv.className = 'response success';
+                                responseDiv.textContent = `✅ 流式响应完成\n\n完整内容:\n${content}`;
+                                return;
+                            }
+                            
+                            try {
+                                const parsed = JSON.parse(data);
+                                
+                                if (parsed.error) {
+                                    responseDiv.className = 'response error';
+                                    responseDiv.textContent = `❌ 流式响应错误: ${parsed.error}`;
+                                    return;
+                                }
+                                
+                                if (parsed.delta) {
+                                    content += parsed.delta;
+                                    responseDiv.textContent = `📡 流式响应:\n\n${content}`;
+                                }
+                            } catch (e) {
+                                // 忽略JSON解析错误
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                responseDiv.className = 'response error';
+                responseDiv.textContent = `❌ 流式连接错误: ${error.message}`;
+            }
+        }
+        
+        // 清空响应
+        function clearResponse() {
+            const responseDiv = document.getElementById('chatResponse');
+            responseDiv.style.display = 'none';
+            responseDiv.textContent = '';
+        }
+        
+        // 页面加载时自动检查健康状态
+        window.addEventListener('load', function() {
+            checkHealth();
+        });
+    </script>
+</body>
+</html>
