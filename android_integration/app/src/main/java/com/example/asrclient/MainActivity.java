@@ -4,6 +4,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Log;
@@ -21,7 +22,7 @@ public class MainActivity extends AppCompatActivity implements ASRManager.ASRLis
     private static final int PERMISSION_REQUEST_CODE = 1001;
 
     private ASRManager asrManager;
-    private Button btnConnect, btnRecord;
+    private Button btnConnect, btnRecord, btnClearResults, btnSaveResults, btnMeetingSummary;
     private TextView tvStatus, tvResults;
     private EditText etServerHost, etServerPort;
     private ScrollView scrollResults;
@@ -42,20 +43,26 @@ public class MainActivity extends AppCompatActivity implements ASRManager.ASRLis
     private void initViews() {
         btnConnect = findViewById(R.id.btn_connect);
         btnRecord = findViewById(R.id.btn_record);
+        btnClearResults = findViewById(R.id.btn_clear_results);
+        btnSaveResults = findViewById(R.id.btn_save_results);
+        btnMeetingSummary = findViewById(R.id.btn_meeting_summary);
         tvStatus = findViewById(R.id.tv_status);
         tvResults = findViewById(R.id.tv_results);
         etServerHost = findViewById(R.id.et_server_host);
         etServerPort = findViewById(R.id.et_server_port);
         scrollResults = findViewById(R.id.scroll_results);
-        
+
         // 设置默认服务器地址
         etServerHost.setText("192.168.1.163");
         etServerPort.setText("8000");
-        
+
         // 设置按钮点击事件
         btnConnect.setOnClickListener(this::onConnectClick);
         btnRecord.setOnClickListener(this::onRecordClick);
-        
+        btnClearResults.setOnClickListener(this::onClearResultsClick);
+        btnSaveResults.setOnClickListener(this::onSaveResultsClick);
+        btnMeetingSummary.setOnClickListener(this::onMeetingSummaryClick);
+
         // 初始状态
         updateUI();
     }
@@ -171,6 +178,42 @@ public class MainActivity extends AppCompatActivity implements ASRManager.ASRLis
             
             asrManager.startRecording();
         }
+    }
+
+    private void onClearResultsClick(View view) {
+        recognitionResults.setLength(0);
+        tvResults.setText(getString(R.string.waiting_results));
+        Toast.makeText(this, "识别结果已清空", Toast.LENGTH_SHORT).show();
+    }
+
+    private void onSaveResultsClick(View view) {
+        String resultsText = recognitionResults.toString();
+        if (resultsText.trim().isEmpty()) {
+            Toast.makeText(this, "没有识别结果可保存", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // 这里可以实现文件保存逻辑
+        // 由于Android文件保存涉及权限和存储访问框架，这里先显示提示
+        Toast.makeText(this, "保存功能待实现", Toast.LENGTH_SHORT).show();
+
+        // TODO: 实现文件保存功能
+    }
+
+    private void onMeetingSummaryClick(View view) {
+        String meetingText = recognitionResults.toString();
+        if (meetingText.trim().isEmpty()) {
+            Toast.makeText(this, getString(R.string.no_meeting_text), Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // 启动会议总结Activity
+        Intent intent = new Intent(this, MeetingSummaryActivity.class);
+        intent.putExtra(MeetingSummaryActivity.EXTRA_MEETING_TEXT, meetingText);
+        intent.putExtra(MeetingSummaryActivity.EXTRA_SERVER_HOST, etServerHost.getText().toString().trim());
+        intent.putExtra(MeetingSummaryActivity.EXTRA_SERVER_PORT,
+            Integer.parseInt(etServerPort.getText().toString().trim()));
+        startActivity(intent);
     }
 
     private void updateUI() {

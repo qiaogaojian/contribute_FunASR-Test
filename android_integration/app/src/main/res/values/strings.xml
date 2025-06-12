@@ -25,4 +25,24 @@
     <string name="recording_started">开始录音</string>
     <string name="recording_stopped">停止录音</string>
     <string name="error_prefix">错误: </string>
+
+    <!-- 会议总结相关字符串 -->
+    <string name="meeting_summary">会议总结</string>
+    <string name="meeting_text_preview">会议记录预览</string>
+    <string name="loading_meeting_text">正在加载会议记录...</string>
+    <string name="summary_type_selection">选择总结类型</string>
+    <string name="summary_type_brief">简要总结 (重点摘要)</string>
+    <string name="summary_type_detailed">详细总结 (完整分析)</string>
+    <string name="summary_type_action">行动项总结 (待办事项)</string>
+    <string name="generate_summary">生成总结</string>
+    <string name="generating_summary">正在生成总结，请稍候...</string>
+    <string name="summary_result">总结结果</string>
+    <string name="save_summary">保存总结</string>
+    <string name="copy_summary">复制总结</string>
+    <string name="back_to_main">返回主界面</string>
+    <string name="no_meeting_text">没有会议记录可以总结</string>
+    <string name="summary_copied">总结已复制到剪贴板</string>
+    <string name="summary_generation_failed">总结生成失败</string>
+    <string name="clear_results">清空结果</string>
+    <string name="save_results">保存结果</string>
 </resources>
