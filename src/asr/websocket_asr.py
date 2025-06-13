@@ -85,8 +85,10 @@ class WebSocketASR:
             # 检查模型是否存在，不存在则下载
             if not os.path.exists(os.path.join(asr_model_path, 'configuration.json')):
                 logger.info("正在下载ASR模型文件...")
-                snapshot_download('iic/speech_seaco_paraformer_large_asr_nat-zh-cn-16k-common-vocab8404-pytorch',
-                                cache_dir=home_directory)
+                snapshot_download('iic/speech_seaco_paraformer_large_asr_nat-zh-cn-16k-common-vocab8404-pytorch', cache_dir=home_directory)
+                snapshot_download('iic/speech_fsmn_vad_zh-cn-16k-common-pytorch', cache_dir=home_directory)
+                snapshot_download('iic/punc_ct-transformer_zh-cn-common-vocab272727-pytorch', cache_dir=home_directory)
+                snapshot_download('iic/speech_campplus_sv_zh-cn_16k-common', cache_dir=home_directory)
 
             # 使用配置文件中的VAD参数
             vad_kwargs = self.config["vad_config"]
